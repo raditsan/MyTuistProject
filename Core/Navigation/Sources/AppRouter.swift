@@ -5,19 +5,18 @@ import DomainProduct
 
 // MARK: - AppRouter
 
-/// Responsible for navigation mechanics (push, pop, present, dismiss).
-/// Encapsulates UIKit navigation for seamless integration in SwiftUI.
+/// Responsible ONLY for navigation mechanics (push, pop, present, dismiss).
+/// View construction and route mapping are encapsulated within each route.
 @MainActor
 public final class AppRouter: ObservableObject {
     public typealias RouteViewBuilder = @MainActor (AppRoute) -> AnyView
     public static var viewBuilder: RouteViewBuilder = { _ in AnyView(EmptyView()) }
 
     public let navigationController: UINavigationController
-    public let alertCoordinator: AlertCoordinator
+    public let alertCoordinator = AlertCoordinator()
 
     public init(navigationController: UINavigationController? = nil) {
         self.navigationController = navigationController ?? UINavigationController()
-        self.alertCoordinator = AlertCoordinator()
     }
 
     // MARK: - Toasts & Alerts
@@ -44,21 +43,21 @@ public final class AppRouter: ObservableObject {
         navigationController.setViewControllers([hosting], animated: false)
     }
 
-    public func setRootView(to route: AnyAppRoute) {
+    /// Sets the root view from a global AppRoute (e.g. router.setRootView(to: .productList)).
+    public func setRootView(to route: AppRoute) {
         let view = route.makeView()
         let hosting = RouteHostingController(rootView: addEnvironment(to: view), routeDestination: route.destination)
         navigationController.setViewControllers([hosting], animated: false)
     }
 
-    public func setRootView(to route: AppRoute) {
-        let view = Self.viewBuilder(route)
-        let destination: AppRouteDestination
-        switch route {
-        case .productList: destination = .productList
-        case .productDetail, .productDetailById: destination = .productDetail
+    // MARK: - Deep Link Engine
+
+    /// Handles an incoming deep link URL and navigates to the resolved route.
+    public func handle(url: URL) {
+        let deepLinkHandler = DeepLinkHandler()
+        if let targetRoute = deepLinkHandler.parse(url: url) {
+            navigate(to: targetRoute)
         }
-        let hosting = RouteHostingController(rootView: addEnvironment(to: view), routeDestination: destination)
-        navigationController.setViewControllers([hosting], animated: false)
     }
 
     // MARK: - Navigation Engine
@@ -70,13 +69,8 @@ public final class AppRouter: ObservableObject {
 
     /// Explicit parameter syntax: `router.navigate(to: .productDetail(product))`
     public func navigate(to route: AppRoute, animated: Bool = true) {
-        let view = Self.viewBuilder(route)
-        let destination: AppRouteDestination
-        switch route {
-        case .productList: destination = .productList
-        case .productDetail, .productDetailById: destination = .productDetail
-        }
-        push(view, destination: destination, animated: animated)
+        let view = route.makeView()
+        push(view, destination: route.destination, animated: animated)
     }
 
     /// Navigates to any route conforming to AppRouteType.
@@ -85,13 +79,8 @@ public final class AppRouter: ObservableObject {
         push(view, destination: route.destination, animated: animated)
     }
 
-    public func navigate(to route: AnyAppRoute, animated: Bool = true) {
-        let view = route.makeView()
-        push(view, destination: route.destination, animated: animated)
-    }
-
     /// Pushes any concrete View onto the navigation stack, wrapping it in a RouteHostingController.
-    public func push<V: View>(_ view: V, destination: AppRouteDestination? = nil, animated: Bool = true) {
+    private func push<V: View>(_ view: V, destination: AppRouteDestination? = nil, animated: Bool = true) {
         let hosting = RouteHostingController(rootView: addEnvironment(to: view), routeDestination: destination)
         navigationController.pushViewController(hosting, animated: animated)
     }
@@ -114,7 +103,7 @@ public final class AppRouter: ObservableObject {
 
     // MARK: - Modal Presentations
 
-    /// Presents any concrete View as a modal sheet with configurable detents.
+    /// Presents any concrete View as a modal sheet with configurable configuration.
     public func presentSheet<V: View>(
         _ view: V,
         configuration: SheetConfiguration = .default,
@@ -134,23 +123,15 @@ public final class AppRouter: ObservableObject {
         present(view, style: .pageSheet, configuration: effectiveConfig, animated: animated)
     }
 
+    /// Presents a global AppRoute as a modal sheet.
     public func presentSheet(
-        to route: AnyAppRoute,
+        to route: AppRoute,
         configuration: SheetConfiguration? = nil,
         animated: Bool = true
     ) {
         let view = route.makeView()
         let effectiveConfig = configuration ?? route.sheetConfiguration ?? .default
         present(view, style: .pageSheet, configuration: effectiveConfig, animated: animated)
-    }
-
-    public func presentSheet(
-        to route: AppRoute,
-        configuration: SheetConfiguration? = nil,
-        animated: Bool = true
-    ) {
-        let view = Self.viewBuilder(route)
-        present(view, style: .pageSheet, configuration: configuration ?? .default, animated: animated)
     }
 
     public func dismissModal(animated: Bool = true, completion: (() -> Void)? = nil) {
@@ -214,9 +195,39 @@ public final class AppRouter: ObservableObject {
     }
 
     /// Injects shared environment values into any View.
-    public func addEnvironment<V: View>(to content: V) -> some View {
+    private func addEnvironment<V: View>(to content: V) -> some View {
         content
             .environmentObject(self)
             .environmentObject(alertCoordinator)
+    }
+}
+
+// MARK: - NavigationControllerContainer
+
+public struct NavigationControllerContainer: UIViewControllerRepresentable {
+    let navigationController: UINavigationController
+
+    public init(navigationController: UINavigationController) {
+        self.navigationController = navigationController
+    }
+
+    public func makeUIViewController(context: Context) -> UINavigationController {
+        return navigationController
+    }
+
+    public func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {}
+}
+
+// MARK: - LazyView
+
+public struct LazyView<Content: View>: View {
+    private let build: () -> Content
+
+    public init(_ build: @autoclosure @escaping () -> Content) {
+        self.build = build
+    }
+
+    public var body: some View {
+        build()
     }
 }

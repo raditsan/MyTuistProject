@@ -22,12 +22,21 @@ public final class AppDIContainer: ObservableObject {
     public func setupNavigation() {
         AppRouter.viewBuilder = { route in
             switch route {
-            case .productList:
+            case .splash, .productList:
                 return AnyView(ProductListView())
             case .productDetail(let product):
                 return AnyView(ProductDetailView(productId: product.id))
             case .productDetailById(let id):
                 return AnyView(ProductDetailView(productId: id))
+            case .product(let productRoute):
+                switch productRoute {
+                case .list:
+                    return AnyView(ProductListView())
+                case .detail(let product):
+                    return AnyView(ProductDetailView(productId: product.id))
+                case .detailById(let id):
+                    return AnyView(ProductDetailView(productId: id))
+                }
             }
         }
     }
