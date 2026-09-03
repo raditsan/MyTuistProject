@@ -8,6 +8,7 @@ public enum AppRouteDestination: Hashable, Sendable {
     case splash
     case productList
     case productDetail
+    case deeplinkFetch
     case product(ProductDestination)
 }
 

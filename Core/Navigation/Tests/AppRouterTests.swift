@@ -103,6 +103,22 @@ final class AppRouterTests: XCTestCase {
 
         // Then
         XCTAssertEqual(resolvedRoute2, .product(.detailById(42)))
+
+        // When: URL "mytuist://product-preload/42"
+        let url3 = URL(string: "mytuist://product-preload/42")!
+        let pathComponents3 = [url3.host!].compactMap { $0 } + url3.pathComponents.filter { $0 != "/" }
+        let resolvedRoute3 = AppRoute.deepLinkResolve(pathComponents: pathComponents3)
+
+        // Then
+        XCTAssertEqual(resolvedRoute3, .deeplinkFetch(.product(id: 42)))
+
+        // When: URL "mytuist://product/preload/42"
+        let url4 = URL(string: "mytuist://product/preload/42")!
+        let pathComponents4 = [url4.host!].compactMap { $0 } + url4.pathComponents.filter { $0 != "/" }
+        let resolvedRoute4 = AppRoute.deepLinkResolve(pathComponents: pathComponents4)
+
+        // Then
+        XCTAssertEqual(resolvedRoute4, .deeplinkFetch(.product(id: 42)))
     }
 
     func test_handleURL_navigatesToResolvedRoute() {

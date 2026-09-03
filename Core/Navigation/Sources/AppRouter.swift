@@ -64,7 +64,11 @@ public final class AppRouter: ObservableObject {
         }
 
         if let resolvedRoute = AppRoute.deepLinkResolve(pathComponents: fullPath) {
-            navigate(to: resolvedRoute)
+            if case let .deeplinkFetch(entryPoint) = resolvedRoute {
+                deeplinkLoader(entryPoint)
+            } else {
+                navigate(to: resolvedRoute)
+            }
         }
     }
 
@@ -110,6 +114,25 @@ public final class AppRouter: ObservableObject {
         if let target = targetVC {
             navigationController.popToViewController(target, animated: animated)
         }
+    }
+    
+    public func dismissDeeplinkLoader() async {
+        await withCheckedContinuation { continuation in
+            navigationController.dismiss(animated: false) {
+                continuation.resume()
+            }
+        }
+    }
+    
+    public func deeplinkLoader(_ entrypoint: DeeplinkEntryPoint) {
+        let route: AppRoute = .deeplinkFetch(entrypoint)
+        let view = route.makeView()
+        present(
+            view,
+            style: .overFullScreen,
+            configuration: SheetConfiguration(isTransparent: true),
+            animated: false
+        )
     }
 
     // MARK: - Modal Presentations

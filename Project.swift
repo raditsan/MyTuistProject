@@ -32,6 +32,7 @@ let project = Project(
             dependencies: [
                 .external(name: "FactoryKit"),
                 .target(name: "FeatureSplash"),
+                .target(name: "FeatureDeeplinkLoader"),
                 .target(name: "FeatureProduct"),
                 .target(name: "FeatureProductDetail"),
                 .target(name: "DomainProduct"),
@@ -270,6 +271,38 @@ let project = Project(
             ],
             dependencies: [
                 .target(name: "FeatureSplash"),
+                .external(name: "FactoryKit")
+            ]
+        ),
+
+        // MARK: - Feature Deeplink Loader
+        .target(
+            name: "FeatureDeeplinkLoader",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.FeatureDeeplinkLoader",
+            sources: [
+                "Features/DeeplinkLoader/Sources/**"
+            ],
+            dependencies: [
+                .external(name: "FactoryKit"),
+                .target(name: "CoreDesignSystem"),
+                .target(name: "CoreNavigation"),
+                .target(name: "DomainProduct"),
+            ]
+        ),
+        .target(
+            name: "FeatureDeeplinkLoaderTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.FeatureDeeplinkLoaderTests",
+            infoPlist: .default,
+            sources: [
+                "Features/DeeplinkLoader/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "FeatureDeeplinkLoader"),
+                .target(name: "DomainProduct"),
                 .external(name: "FactoryKit")
             ]
         ),

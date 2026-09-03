@@ -3,6 +3,7 @@ import CoreNavigation
 import DomainProduct
 import DataProduct
 import FeatureSplash
+import FeatureDeeplinkLoader
 import FeatureProduct
 import FeatureProductDetail
 import FactoryKit
@@ -25,6 +26,8 @@ public final class AppDIContainer: ObservableObject {
             switch route {
             case .splash:
                 return AnyView(SplashView())
+            case .deeplinkFetch(let entryPoint):
+                return AnyView(DeeplinkLoaderView(entryPoint: entryPoint))
             case .product(let productRoute):
                 switch productRoute {
                 case .list:
