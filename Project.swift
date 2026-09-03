@@ -3,6 +3,7 @@ import ProjectDescription
 let project = Project(
     name: "MyTuistProject",
     targets: [
+        // MARK: - App Target (Composition Root)
         .target(
             name: "MyTuistProject",
             destinations: .iOS,
@@ -16,22 +17,183 @@ let project = Project(
                     ],
                 ]
             ),
-            buildableFolders: [
-                "MyTuistProject/Sources",
-                "MyTuistProject/Resources",
+            sources: [
+                "MyTuistProject/Sources/**"
             ],
-            dependencies: []
+            resources: [
+                "MyTuistProject/Resources/**"
+            ],
+            dependencies: [
+                .target(name: "FeatureProduct"),
+                .target(name: "FeatureProductDetail"),
+                .target(name: "DomainProduct"),
+                .target(name: "DataProduct"),
+                .target(name: "CoreDesignSystem"),
+                .target(name: "CoreNetwork"),
+            ]
         ),
+
+        // MARK: - App Tests
         .target(
             name: "MyTuistProjectTests",
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.MyTuistProjectTests",
             infoPlist: .default,
-            buildableFolders: [
-                "MyTuistProject/Tests"
+            sources: [
+                "MyTuistProject/Tests/**"
             ],
-            dependencies: [.target(name: "MyTuistProject")]
+            dependencies: [
+                .target(name: "MyTuistProject")
+            ]
+        ),
+
+        // MARK: - Core Modules
+        .target(
+            name: "CoreNetwork",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.CoreNetwork",
+            sources: [
+                "Core/Network/Sources/**"
+            ],
+            dependencies: []
+        ),
+        .target(
+            name: "CoreNetworkTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.CoreNetworkTests",
+            infoPlist: .default,
+            sources: [
+                "Core/Network/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "CoreNetwork")
+            ]
+        ),
+        .target(
+            name: "CoreDesignSystem",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.CoreDesignSystem",
+            sources: [
+                "Core/DesignSystem/Sources/**"
+            ],
+            dependencies: []
+        ),
+
+        // MARK: - Domain Modules
+        .target(
+            name: "DomainProduct",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.DomainProduct",
+            sources: [
+                "Modules/Domain/Product/Sources/**"
+            ],
+            dependencies: []
+        ),
+        .target(
+            name: "DomainProductTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.DomainProductTests",
+            infoPlist: .default,
+            sources: [
+                "Modules/Domain/Product/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "DomainProduct")
+            ]
+        ),
+
+        // MARK: - Data Modules
+        .target(
+            name: "DataProduct",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.DataProduct",
+            sources: [
+                "Modules/Data/Product/Sources/**"
+            ],
+            dependencies: [
+                .target(name: "DomainProduct"),
+                .target(name: "CoreNetwork"),
+            ]
+        ),
+        .target(
+            name: "DataProductTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.DataProductTests",
+            infoPlist: .default,
+            sources: [
+                "Modules/Data/Product/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "DataProduct"),
+                .target(name: "DomainProduct"),
+                .target(name: "CoreNetwork"),
+            ]
+        ),
+
+        // MARK: - Feature Product (Catalog/List)
+        .target(
+            name: "FeatureProduct",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.FeatureProduct",
+            sources: [
+                "Features/Product/Sources/**"
+            ],
+            dependencies: [
+                .target(name: "DomainProduct"),
+                .target(name: "CoreDesignSystem"),
+            ]
+        ),
+        .target(
+            name: "FeatureProductTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.FeatureProductTests",
+            infoPlist: .default,
+            sources: [
+                "Features/Product/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "FeatureProduct"),
+                .target(name: "DomainProduct"),
+            ]
+        ),
+
+        // MARK: - Feature Product Detail
+        .target(
+            name: "FeatureProductDetail",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.FeatureProductDetail",
+            sources: [
+                "Features/ProductDetail/Sources/**"
+            ],
+            dependencies: [
+                .target(name: "DomainProduct"),
+                .target(name: "CoreDesignSystem"),
+            ]
+        ),
+        .target(
+            name: "FeatureProductDetailTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.FeatureProductDetailTests",
+            infoPlist: .default,
+            sources: [
+                "Features/ProductDetail/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "FeatureProductDetail"),
+                .target(name: "DomainProduct"),
+            ]
         ),
     ]
 )
