@@ -2,6 +2,7 @@ import SwiftUI
 import CoreNavigation
 import DomainProduct
 import DataProduct
+import FeatureSplash
 import FeatureProduct
 import FeatureProductDetail
 import FactoryKit
@@ -22,12 +23,8 @@ public final class AppDIContainer: ObservableObject {
     public func setupNavigation() {
         AppRouter.viewBuilder = { route in
             switch route {
-            case .splash, .productList:
-                return AnyView(ProductListView())
-            case .productDetail(let product):
-                return AnyView(ProductDetailView(productId: product.id))
-            case .productDetailById(let id):
-                return AnyView(ProductDetailView(productId: id))
+            case .splash:
+                return AnyView(SplashView())
             case .product(let productRoute):
                 switch productRoute {
                 case .list:

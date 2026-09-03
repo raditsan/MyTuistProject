@@ -1,12 +1,11 @@
 import SwiftUI
 import UIKit
 import Combine
-import DomainProduct
 
 // MARK: - AppRouter
 
-/// Responsible ONLY for navigation mechanics (push, pop, present, dismiss).
-/// View construction and route mapping are encapsulated within each route.
+/// Responsible for navigation mechanics (push, pop, present, dismiss, deep link).
+/// Conforms to generic AppRouteType and handles dynamic view resolution.
 @MainActor
 public final class AppRouter: ObservableObject {
     public typealias RouteViewBuilder = @MainActor (AppRoute) -> AnyView
@@ -36,14 +35,14 @@ public final class AppRouter: ObservableObject {
         navigationController.setViewControllers([hosting], animated: false)
     }
 
-    /// Sets the root view from any route conforming to AppRouteType.
+    /// Sets the root view from any generic route conforming to AppRouteType.
     public func setRootView<R: AppRouteType>(to route: R) {
         let view = route.makeView()
         let hosting = RouteHostingController(rootView: addEnvironment(to: view), routeDestination: route.destination)
         navigationController.setViewControllers([hosting], animated: false)
     }
 
-    /// Sets the root view from a global AppRoute (e.g. router.setRootView(to: .productList)).
+    /// Sets the root view from a global AppRoute (supports leading dot syntax: router.setRootView(to: .splash)).
     public func setRootView(to route: AppRoute) {
         let view = route.makeView()
         let hosting = RouteHostingController(rootView: addEnvironment(to: view), routeDestination: route.destination)
@@ -54,33 +53,46 @@ public final class AppRouter: ObservableObject {
 
     /// Handles an incoming deep link URL and navigates to the resolved route.
     public func handle(url: URL) {
-        let deepLinkHandler = DeepLinkHandler()
-        if let targetRoute = deepLinkHandler.parse(url: url) {
-            navigate(to: targetRoute)
+        let host = url.host?.lowercased()
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+
+        let fullPath: [String]
+        if let host, !pathComponents.contains(host) {
+            fullPath = [host] + pathComponents
+        } else {
+            fullPath = pathComponents
+        }
+
+        if let resolvedRoute = AppRoute.deepLinkResolve(pathComponents: fullPath) {
+            navigate(to: resolvedRoute)
         }
     }
 
     // MARK: - Navigation Engine
 
-    /// Direct call syntax: `router.navigate(.productDetail(product))`
+    /// Direct call syntax: router.navigate(.product(.detail(product)))
     public func navigate(_ route: AppRoute, animated: Bool = true) {
         navigate(to: route, animated: animated)
     }
 
-    /// Explicit parameter syntax: `router.navigate(to: .productDetail(product))`
+    /// Explicit parameter syntax: router.navigate(to: .product(.detail(product)))
     public func navigate(to route: AppRoute, animated: Bool = true) {
         let view = route.makeView()
         push(view, destination: route.destination, animated: animated)
     }
 
-    /// Navigates to any route conforming to AppRouteType.
+    /// Navigates to any generic route conforming to AppRouteType.
     public func navigate<R: AppRouteType>(to route: R, animated: Bool = true) {
         let view = route.makeView()
         push(view, destination: route.destination, animated: animated)
     }
 
-    /// Pushes any concrete View onto the navigation stack, wrapping it in a RouteHostingController.
-    private func push<V: View>(_ view: V, destination: AppRouteDestination? = nil, animated: Bool = true) {
+    /// Direct call syntax for any generic route conforming to AppRouteType.
+    public func navigate<R: AppRouteType>(_ route: R, animated: Bool = true) {
+        navigate(to: route, animated: animated)
+    }
+
+    public func push<V: View>(_ view: V, destination: AppRouteDestination? = nil, animated: Bool = true) {
         let hosting = RouteHostingController(rootView: addEnvironment(to: view), routeDestination: destination)
         navigationController.pushViewController(hosting, animated: animated)
     }
@@ -89,7 +101,6 @@ public final class AppRouter: ObservableObject {
         navigationController.popViewController(animated: animated)
     }
 
-    /// Pops back to a specific route destination on the navigation stack.
     public func popToRoute(_ destination: AppRouteDestination, animated: Bool = true) {
         let targetVC = navigationController.viewControllers.last { vc in
             guard let identifiable = vc as? RouteIdentifiable else { return false }
@@ -103,7 +114,6 @@ public final class AppRouter: ObservableObject {
 
     // MARK: - Modal Presentations
 
-    /// Presents any concrete View as a modal sheet with configurable configuration.
     public func presentSheet<V: View>(
         _ view: V,
         configuration: SheetConfiguration = .default,
@@ -112,9 +122,8 @@ public final class AppRouter: ObservableObject {
         present(view, style: .pageSheet, configuration: configuration, animated: animated)
     }
 
-    /// Presents any route conforming to AppRouteType as a modal sheet.
-    public func presentSheet<R: AppRouteType>(
-        to route: R,
+    public func presentSheet(
+        to route: AppRoute,
         configuration: SheetConfiguration? = nil,
         animated: Bool = true
     ) {
@@ -123,9 +132,8 @@ public final class AppRouter: ObservableObject {
         present(view, style: .pageSheet, configuration: effectiveConfig, animated: animated)
     }
 
-    /// Presents a global AppRoute as a modal sheet.
-    public func presentSheet(
-        to route: AppRoute,
+    public func presentSheet<R: AppRouteType>(
+        to route: R,
         configuration: SheetConfiguration? = nil,
         animated: Bool = true
     ) {
@@ -194,8 +202,7 @@ public final class AppRouter: ObservableObject {
         navigationController.present(hosting, animated: animated)
     }
 
-    /// Injects shared environment values into any View.
-    private func addEnvironment<V: View>(to content: V) -> some View {
+    public func addEnvironment<V: View>(to content: V) -> some View {
         content
             .environmentObject(self)
             .environmentObject(alertCoordinator)

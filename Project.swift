@@ -15,6 +15,12 @@ let project = Project(
                         "UIColorName": "",
                         "UIImageName": "",
                     ],
+                    "CFBundleURLTypes": [
+                        [
+                            "CFBundleURLName": "dev.tuist.MyTuistProject",
+                            "CFBundleURLSchemes": ["mytuist"],
+                        ],
+                    ],
                 ]
             ),
             sources: [
@@ -25,6 +31,7 @@ let project = Project(
             ],
             dependencies: [
                 .external(name: "FactoryKit"),
+                .target(name: "FeatureSplash"),
                 .target(name: "FeatureProduct"),
                 .target(name: "FeatureProductDetail"),
                 .target(name: "DomainProduct"),
@@ -233,6 +240,36 @@ let project = Project(
             dependencies: [
                 .target(name: "FeatureProductDetail"),
                 .target(name: "DomainProduct"),
+                .external(name: "FactoryKit")
+            ]
+        ),
+
+        // MARK: - Feature Splash
+        .target(
+            name: "FeatureSplash",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.FeatureSplash",
+            sources: [
+                "Features/Splash/Sources/**"
+            ],
+            dependencies: [
+                .external(name: "FactoryKit"),
+                .target(name: "CoreDesignSystem"),
+                .target(name: "CoreNavigation"),
+            ]
+        ),
+        .target(
+            name: "FeatureSplashTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.FeatureSplashTests",
+            infoPlist: .default,
+            sources: [
+                "Features/Splash/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "FeatureSplash"),
                 .external(name: "FactoryKit")
             ]
         ),

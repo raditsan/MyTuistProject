@@ -1,12 +1,8 @@
 import Foundation
+import CoreNavigation
+import FeatureProduct
 
 public struct DeepLinkHandler: Sendable {
-    /// All registered route types that support deeplink resolution.
-    private static let registeredRoutes: [any AppRouteType.Type] = [
-        AppRoute.self,
-        ProductRoute.self
-    ]
-
     public init() {}
 
     /// Parses an incoming URL and resolves it to a matching AppRoute.
@@ -21,12 +17,6 @@ public struct DeepLinkHandler: Sendable {
             fullPath = pathComponents
         }
 
-        for route in Self.registeredRoutes {
-            if let resolved = route.deepLinkResolve(pathComponents: fullPath) {
-                return resolved
-            }
-        }
-
-        return nil
+        return AppRoute.deepLinkResolve(pathComponents: fullPath)
     }
 }

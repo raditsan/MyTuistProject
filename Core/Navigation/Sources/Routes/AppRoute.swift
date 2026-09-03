@@ -4,21 +4,14 @@ import DomainProduct
 // MARK: - Global App Route Enum
 public enum AppRoute: AppRouteType {
     case splash
-    case productList
-    case productDetail(Product)
-    case productDetailById(Int)
     case product(ProductRoute)
 
     public var destination: AppRouteDestination {
         switch self {
         case .splash:
             return .splash
-        case .productList:
-            return .productList
-        case .productDetail, .productDetailById:
-            return .productDetail
-        case .product(let subRoute):
-            return subRoute.destination
+        case .product(let route):
+            return route.destination
         }
     }
 
@@ -39,11 +32,11 @@ public enum AppRoute: AppRouteType {
         let subComponents = Array(pathComponents.dropFirst())
 
         switch host {
-        case "products":
+        case "products", "product":
             if let idString = subComponents.first, let id = Int(idString) {
-                return .productDetailById(id)
+                return .product(.detailById(id))
             }
-            return .productList
+            return .product(.list)
         default:
             return nil
         }

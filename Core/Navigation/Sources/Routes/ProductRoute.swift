@@ -7,15 +7,11 @@ public enum ProductRoute: AppRouteType {
     case detailById(Int)
 
     public var destination: AppRouteDestination {
-        return .product(productDestination)
-    }
-
-    public var productDestination: ProductDestination {
         switch self {
         case .list:
-            return .list
+            return .product(.list)
         case .detail, .detailById:
-            return .detail
+            return .product(.detail)
         }
     }
 

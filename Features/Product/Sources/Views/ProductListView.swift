@@ -101,7 +101,7 @@ public struct ProductListView: View {
                 LazyVGrid(columns: columns, spacing: DesignTokens.Spacing.md) {
                     ForEach(products) { product in
                         Button {
-                            router.navigate(.productDetail(product))
+                            router.navigate(.product(.detail(product)))
                         } label: {
                             ProductCardView(product: product)
                         }
