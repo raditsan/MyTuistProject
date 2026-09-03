@@ -1,13 +1,20 @@
 import SwiftUI
-import FeatureProduct
+import CoreNavigation
 
 @main
 struct MyTuistProjectApp: App {
-    @StateObject private var container = AppDIContainer.shared
+    @StateObject private var router = AppDIContainer.shared.router
+
+    init() {
+        AppDIContainer.shared.router.setRootView(to: AppRoute.productList)
+    }
 
     var body: some Scene {
         WindowGroup {
-            container.makeProductListView()
+            NavigationControllerContainer(navigationController: router.navigationController)
+                .ignoresSafeArea()
+                .environmentObject(router)
+                .environmentObject(router.alertCoordinator)
         }
     }
 }

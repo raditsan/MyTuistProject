@@ -1,10 +1,12 @@
 import SwiftUI
 import DomainProduct
 import CoreDesignSystem
+import CoreNavigation
 
 public struct ProductListView: View {
+    @EnvironmentObject private var router: AppRouter
     @StateObject private var viewModel: ProductListViewModel
-    private let detailViewFactory: (Int) -> AnyView
+    private let onSelectProduct: ((Product) -> Void)?
 
     private let columns = [
         GridItem(.flexible(), spacing: DesignTokens.Spacing.md),
@@ -13,27 +15,25 @@ public struct ProductListView: View {
 
     public init(
         viewModel: ProductListViewModel,
-        detailViewFactory: @escaping (Int) -> AnyView
+        onSelectProduct: ((Product) -> Void)? = nil
     ) {
         _viewModel = StateObject(wrappedValue: viewModel)
-        self.detailViewFactory = detailViewFactory
+        self.onSelectProduct = onSelectProduct
     }
 
     public var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Category Filter Bar
-                categoryFilterBar
+        VStack(spacing: 0) {
+            // Category Filter Bar
+            categoryFilterBar
 
-                // Content State
-                contentView
-            }
-            .background(DesignTokens.Colors.background.ignoresSafeArea())
-            .navigationTitle("Katalog Produk")
-            .searchable(text: $viewModel.searchQuery, prompt: "Cari produk...")
-            .task {
-                await viewModel.onAppear()
-            }
+            // Content State
+            contentView
+        }
+        .background(DesignTokens.Colors.background.ignoresSafeArea())
+        .navigationTitle("Katalog Produk")
+        .searchable(text: $viewModel.searchQuery, prompt: "Cari produk...")
+        .task {
+            await viewModel.onAppear()
         }
     }
 
@@ -99,7 +99,11 @@ public struct ProductListView: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: DesignTokens.Spacing.md) {
                     ForEach(products) { product in
-                        NavigationLink(destination: detailViewFactory(product.id)) {
+                        Button(action: {
+                            if let onSelectProduct = onSelectProduct {
+                                onSelectProduct(product)
+                            }
+                        }) {
                             ProductCardView(product: product)
                         }
                         .buttonStyle(PlainButtonStyle())

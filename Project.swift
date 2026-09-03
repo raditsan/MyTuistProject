@@ -28,6 +28,7 @@ let project = Project(
                 .target(name: "FeatureProductDetail"),
                 .target(name: "DomainProduct"),
                 .target(name: "DataProduct"),
+                .target(name: "CoreNavigation"),
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNetwork"),
             ]
@@ -81,6 +82,29 @@ let project = Project(
                 "Core/DesignSystem/Sources/**"
             ],
             dependencies: []
+        ),
+        .target(
+            name: "CoreNavigation",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.CoreNavigation",
+            sources: [
+                "Core/Navigation/Sources/**"
+            ],
+            dependencies: []
+        ),
+        .target(
+            name: "CoreNavigationTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.CoreNavigationTests",
+            infoPlist: .default,
+            sources: [
+                "Core/Navigation/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "CoreNavigation")
+            ]
         ),
 
         // MARK: - Domain Modules
@@ -150,6 +174,7 @@ let project = Project(
             dependencies: [
                 .target(name: "DomainProduct"),
                 .target(name: "CoreDesignSystem"),
+                .target(name: "CoreNavigation"),
             ]
         ),
         .target(
@@ -179,6 +204,7 @@ let project = Project(
             dependencies: [
                 .target(name: "DomainProduct"),
                 .target(name: "CoreDesignSystem"),
+                .target(name: "CoreNavigation"),
             ]
         ),
         .target(

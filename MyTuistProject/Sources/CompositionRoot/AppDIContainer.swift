@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreNetwork
 import CoreDesignSystem
+import CoreNavigation
 import DomainProduct
 import DataProduct
 import FeatureProduct
@@ -12,6 +13,7 @@ public final class AppDIContainer: ObservableObject {
 
     // MARK: - Core Services
     public let networkClient: NetworkClientProtocol
+    public let router: AppRouter
 
     // MARK: - Domain & Data Repositories
     public let productRemoteDataSource: ProductRemoteDataSourceProtocol
@@ -23,6 +25,7 @@ public final class AppDIContainer: ObservableObject {
         // 1. Initialize Core
         let client = URLSessionNetworkClient()
         self.networkClient = client
+        self.router = AppRouter()
 
         // 2. Initialize Data Layer
         let remoteDataSource = ProductRemoteDataSource(client: client)
@@ -43,11 +46,8 @@ public final class AppDIContainer: ObservableObject {
         )
         return ProductListView(
             viewModel: viewModel,
-            detailViewFactory: { [weak self] productId in
-                guard let self = self else {
-                    return AnyView(EmptyView())
-                }
-                return AnyView(self.makeProductDetailView(productId: productId))
+            onSelectProduct: { [weak self] product in
+                self?.router.navigate(to: AppRoute.productDetail(product))
             }
         )
     }

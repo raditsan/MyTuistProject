@@ -1,8 +1,10 @@
 import SwiftUI
 import DomainProduct
 import CoreDesignSystem
+import CoreNavigation
 
 public struct ProductDetailView: View {
+    @EnvironmentObject private var router: AppRouter
     @StateObject private var viewModel: ProductDetailViewModel
 
     public init(viewModel: ProductDetailViewModel) {
