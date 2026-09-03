@@ -1,5 +1,6 @@
 import Foundation
 import DomainProduct
+import FactoryKit
 
 public enum DetailViewState<T: Equatable>: Equatable {
     case idle
@@ -13,15 +14,11 @@ public enum DetailViewState<T: Equatable>: Equatable {
 public final class ProductDetailViewModel: ObservableObject {
     @Published public private(set) var state: DetailViewState<Product> = .idle
 
-    private let productId: Int
-    private let getProductDetailUseCase: GetProductDetailUseCaseProtocol
+    public let productId: Int
+    @Injected(\.getProductDetailUseCase) private var getProductDetailUseCase: GetProductDetailUseCaseProtocol
 
-    public init(
-        productId: Int,
-        getProductDetailUseCase: GetProductDetailUseCaseProtocol
-    ) {
+    public init(productId: Int) {
         self.productId = productId
-        self.getProductDetailUseCase = getProductDetailUseCase
     }
 
     public func loadDetail() async {

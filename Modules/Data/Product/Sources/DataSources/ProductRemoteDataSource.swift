@@ -1,5 +1,6 @@
 import Foundation
 import CoreNetwork
+import FactoryKit
 
 public enum ProductEndpoint: APIEndpoint {
     case getProducts
@@ -32,8 +33,10 @@ public protocol ProductRemoteDataSourceProtocol: Sendable {
     func fetchCategories() async throws -> [String]
 }
 
-public final class ProductRemoteDataSource: ProductRemoteDataSourceProtocol {
-    private let client: any NetworkClientProtocol
+public final class ProductRemoteDataSource: ProductRemoteDataSourceProtocol, @unchecked Sendable {
+    @Injected(\.networkClient) private var client: NetworkClientProtocol
+
+    public init() {}
 
     public init(client: any NetworkClientProtocol) {
         self.client = client

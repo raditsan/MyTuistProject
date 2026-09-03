@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import Combine
+import DomainProduct
 
 // MARK: - AppRouter
 
@@ -8,11 +9,14 @@ import Combine
 /// Encapsulates UIKit navigation for seamless integration in SwiftUI.
 @MainActor
 public final class AppRouter: ObservableObject {
+    public typealias RouteViewBuilder = @MainActor (AppRoute) -> AnyView
+    public static var viewBuilder: RouteViewBuilder = { _ in AnyView(EmptyView()) }
+
     public let navigationController: UINavigationController
     public let alertCoordinator: AlertCoordinator
 
-    public init(navigationController: UINavigationController = UINavigationController()) {
-        self.navigationController = navigationController
+    public init(navigationController: UINavigationController? = nil) {
+        self.navigationController = navigationController ?? UINavigationController()
         self.alertCoordinator = AlertCoordinator()
     }
 
@@ -46,7 +50,34 @@ public final class AppRouter: ObservableObject {
         navigationController.setViewControllers([hosting], animated: false)
     }
 
+    public func setRootView(to route: AppRoute) {
+        let view = Self.viewBuilder(route)
+        let destination: AppRouteDestination
+        switch route {
+        case .productList: destination = .productList
+        case .productDetail, .productDetailById: destination = .productDetail
+        }
+        let hosting = RouteHostingController(rootView: addEnvironment(to: view), routeDestination: destination)
+        navigationController.setViewControllers([hosting], animated: false)
+    }
+
     // MARK: - Navigation Engine
+
+    /// Direct call syntax: `router.navigate(.productDetail(product))`
+    public func navigate(_ route: AppRoute, animated: Bool = true) {
+        navigate(to: route, animated: animated)
+    }
+
+    /// Explicit parameter syntax: `router.navigate(to: .productDetail(product))`
+    public func navigate(to route: AppRoute, animated: Bool = true) {
+        let view = Self.viewBuilder(route)
+        let destination: AppRouteDestination
+        switch route {
+        case .productList: destination = .productList
+        case .productDetail, .productDetailById: destination = .productDetail
+        }
+        push(view, destination: destination, animated: animated)
+    }
 
     /// Navigates to any route conforming to AppRouteType.
     public func navigate<R: AppRouteType>(to route: R, animated: Bool = true) {
@@ -111,6 +142,15 @@ public final class AppRouter: ObservableObject {
         let view = route.makeView()
         let effectiveConfig = configuration ?? route.sheetConfiguration ?? .default
         present(view, style: .pageSheet, configuration: effectiveConfig, animated: animated)
+    }
+
+    public func presentSheet(
+        to route: AppRoute,
+        configuration: SheetConfiguration? = nil,
+        animated: Bool = true
+    ) {
+        let view = Self.viewBuilder(route)
+        present(view, style: .pageSheet, configuration: configuration ?? .default, animated: animated)
     }
 
     public func dismissModal(animated: Bool = true, completion: (() -> Void)? = nil) {

@@ -2,11 +2,19 @@ import SwiftUI
 import DomainProduct
 import CoreDesignSystem
 import CoreNavigation
+import FactoryKit
 
+@MainActor
 public struct ProductDetailView: View {
-    @EnvironmentObject private var router: AppRouter
+    @Injected(\.router) private var router
     @StateObject private var viewModel: ProductDetailViewModel
 
+    @MainActor
+    public init(productId: Int) {
+        _viewModel = StateObject(wrappedValue: ProductDetailViewModel(productId: productId))
+    }
+
+    @MainActor
     public init(viewModel: ProductDetailViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }

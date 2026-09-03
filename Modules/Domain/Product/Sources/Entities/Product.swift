@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ProductRating: Equatable, Sendable {
+public struct ProductRating: Equatable, Hashable, Sendable {
     public let rate: Double
     public let count: Int
 
@@ -10,7 +10,7 @@ public struct ProductRating: Equatable, Sendable {
     }
 }
 
-public struct Product: Identifiable, Equatable, Sendable {
+public struct Product: Identifiable, Equatable, Hashable, Sendable {
     public let id: Int
     public let title: String
     public let price: Double

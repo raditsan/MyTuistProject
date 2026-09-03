@@ -24,6 +24,7 @@ let project = Project(
                 "MyTuistProject/Resources/**"
             ],
             dependencies: [
+                .external(name: "FactoryKit"),
                 .target(name: "FeatureProduct"),
                 .target(name: "FeatureProductDetail"),
                 .target(name: "DomainProduct"),
@@ -58,7 +59,9 @@ let project = Project(
             sources: [
                 "Core/Network/Sources/**"
             ],
-            dependencies: []
+            dependencies: [
+                .external(name: "FactoryKit")
+            ]
         ),
         .target(
             name: "CoreNetworkTests",
@@ -91,7 +94,10 @@ let project = Project(
             sources: [
                 "Core/Navigation/Sources/**"
             ],
-            dependencies: []
+            dependencies: [
+                .external(name: "FactoryKit"),
+                .target(name: "DomainProduct")
+            ]
         ),
         .target(
             name: "CoreNavigationTests",
@@ -116,7 +122,9 @@ let project = Project(
             sources: [
                 "Modules/Domain/Product/Sources/**"
             ],
-            dependencies: []
+            dependencies: [
+                .external(name: "FactoryKit")
+            ]
         ),
         .target(
             name: "DomainProductTests",
@@ -128,7 +136,8 @@ let project = Project(
                 "Modules/Domain/Product/Tests/**"
             ],
             dependencies: [
-                .target(name: "DomainProduct")
+                .target(name: "DomainProduct"),
+                .external(name: "FactoryKit")
             ]
         ),
 
@@ -142,6 +151,7 @@ let project = Project(
                 "Modules/Data/Product/Sources/**"
             ],
             dependencies: [
+                .external(name: "FactoryKit"),
                 .target(name: "DomainProduct"),
                 .target(name: "CoreNetwork"),
             ]
@@ -159,6 +169,7 @@ let project = Project(
                 .target(name: "DataProduct"),
                 .target(name: "DomainProduct"),
                 .target(name: "CoreNetwork"),
+                .external(name: "FactoryKit")
             ]
         ),
 
@@ -172,6 +183,7 @@ let project = Project(
                 "Features/Product/Sources/**"
             ],
             dependencies: [
+                .external(name: "FactoryKit"),
                 .target(name: "DomainProduct"),
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
@@ -189,6 +201,7 @@ let project = Project(
             dependencies: [
                 .target(name: "FeatureProduct"),
                 .target(name: "DomainProduct"),
+                .external(name: "FactoryKit")
             ]
         ),
 
@@ -202,6 +215,7 @@ let project = Project(
                 "Features/ProductDetail/Sources/**"
             ],
             dependencies: [
+                .external(name: "FactoryKit"),
                 .target(name: "DomainProduct"),
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
@@ -219,6 +233,7 @@ let project = Project(
             dependencies: [
                 .target(name: "FeatureProductDetail"),
                 .target(name: "DomainProduct"),
+                .external(name: "FactoryKit")
             ]
         ),
     ]

@@ -1,5 +1,6 @@
 import XCTest
 import DomainProduct
+import FactoryKit
 @testable import FeatureProduct
 
 @MainActor
@@ -10,15 +11,20 @@ final class ProductListViewModelTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        Container.shared.reset()
         mockUseCase = MockGetProductsUseCase()
         mockRepository = MockProductRepository()
-        sut = ProductListViewModel(
-            getProductsUseCase: mockUseCase,
-            repository: mockRepository
-        )
+
+        let useCase = mockUseCase!
+        let repo = mockRepository!
+        Container.shared.getProductsUseCase.register { useCase }
+        Container.shared.productRepository.register { repo }
+
+        sut = ProductListViewModel()
     }
 
     override func tearDown() {
+        Container.shared.reset()
         mockUseCase = nil
         mockRepository = nil
         sut = nil

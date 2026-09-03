@@ -1,5 +1,6 @@
 import XCTest
 import DomainProduct
+import FactoryKit
 @testable import FeatureProductDetail
 
 @MainActor
@@ -9,11 +10,15 @@ final class ProductDetailViewModelTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        Container.shared.reset()
         mockUseCase = MockGetProductDetailUseCase()
-        sut = ProductDetailViewModel(productId: 10, getProductDetailUseCase: mockUseCase)
+        let useCase = mockUseCase!
+        Container.shared.getProductDetailUseCase.register { useCase }
+        sut = ProductDetailViewModel(productId: 10)
     }
 
     override func tearDown() {
+        Container.shared.reset()
         mockUseCase = nil
         sut = nil
         super.tearDown()

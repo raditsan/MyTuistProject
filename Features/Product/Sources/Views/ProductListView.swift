@@ -2,23 +2,24 @@ import SwiftUI
 import DomainProduct
 import CoreDesignSystem
 import CoreNavigation
+import FactoryKit
 
+@MainActor
 public struct ProductListView: View {
-    @EnvironmentObject private var router: AppRouter
+    @Injected(\.router) private var router
     @StateObject private var viewModel: ProductListViewModel
-    private let onSelectProduct: ((Product) -> Void)?
 
     private let columns = [
         GridItem(.flexible(), spacing: DesignTokens.Spacing.md),
         GridItem(.flexible(), spacing: DesignTokens.Spacing.md)
     ]
 
-    public init(
-        viewModel: ProductListViewModel,
-        onSelectProduct: ((Product) -> Void)? = nil
-    ) {
+    public init() {
+        _viewModel = StateObject(wrappedValue: ProductListViewModel())
+    }
+
+    public init(viewModel: ProductListViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
-        self.onSelectProduct = onSelectProduct
     }
 
     public var body: some View {
@@ -99,11 +100,9 @@ public struct ProductListView: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: DesignTokens.Spacing.md) {
                     ForEach(products) { product in
-                        Button(action: {
-                            if let onSelectProduct = onSelectProduct {
-                                onSelectProduct(product)
-                            }
-                        }) {
+                        Button {
+                            router.navigate(.productDetail(product))
+                        } label: {
                             ProductCardView(product: product)
                         }
                         .buttonStyle(PlainButtonStyle())

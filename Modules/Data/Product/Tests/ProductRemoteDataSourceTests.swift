@@ -1,5 +1,6 @@
 import XCTest
 import CoreNetwork
+import FactoryKit
 @testable import DataProduct
 
 final class ProductRemoteDataSourceTests: XCTestCase {
@@ -8,11 +9,15 @@ final class ProductRemoteDataSourceTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        Container.shared.reset()
         mockNetworkClient = MockNetworkClient()
-        sut = ProductRemoteDataSource(client: mockNetworkClient)
+        let client = mockNetworkClient!
+        Container.shared.networkClient.register { client }
+        sut = ProductRemoteDataSource()
     }
 
     override func tearDown() {
+        Container.shared.reset()
         mockNetworkClient = nil
         sut = nil
         super.tearDown()

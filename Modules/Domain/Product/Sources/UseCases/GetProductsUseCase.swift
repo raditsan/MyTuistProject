@@ -1,11 +1,14 @@
 import Foundation
+import FactoryKit
 
 public protocol GetProductsUseCaseProtocol: Sendable {
     func execute(category: String?, searchQuery: String?) async throws -> [Product]
 }
 
-public final class GetProductsUseCase: GetProductsUseCaseProtocol {
-    private let repository: ProductRepositoryProtocol
+public final class GetProductsUseCase: GetProductsUseCaseProtocol, @unchecked Sendable {
+    @Injected(\.productRepository) private var repository: ProductRepositoryProtocol
+
+    public init() {}
 
     public init(repository: ProductRepositoryProtocol) {
         self.repository = repository

@@ -1,4 +1,5 @@
 import XCTest
+import FactoryKit
 @testable import DomainProduct
 
 final class GetProductDetailUseCaseTests: XCTestCase {
@@ -7,11 +8,15 @@ final class GetProductDetailUseCaseTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        Container.shared.reset()
         mockRepository = MockProductRepository()
-        sut = GetProductDetailUseCase(repository: mockRepository)
+        let repo = mockRepository!
+        Container.shared.productRepository.register { repo }
+        sut = GetProductDetailUseCase()
     }
 
     override func tearDown() {
+        Container.shared.reset()
         mockRepository = nil
         sut = nil
         super.tearDown()

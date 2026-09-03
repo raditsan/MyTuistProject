@@ -1,12 +1,14 @@
 import SwiftUI
 import CoreNavigation
+import FactoryKit
 
 @main
 struct MyTuistProjectApp: App {
-    @StateObject private var router = AppDIContainer.shared.router
+    @Injected(\.router) private var router
 
     init() {
-        AppDIContainer.shared.router.setRootView(to: AppRoute.productList)
+        AppDIContainer.shared.setupNavigation()
+        Container.shared.router().setRootView(to: .productList)
     }
 
     var body: some Scene {

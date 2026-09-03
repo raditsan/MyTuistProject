@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import DomainProduct
+import FactoryKit
 
 public enum ViewState<T: Equatable>: Equatable {
     case idle
@@ -17,16 +18,11 @@ public final class ProductListViewModel: ObservableObject {
     @Published public var selectedCategory: String = "All"
     @Published public var searchQuery: String = ""
 
-    private let getProductsUseCase: GetProductsUseCaseProtocol
-    private let repository: ProductRepositoryProtocol
+    @Injected(\.getProductsUseCase) private var getProductsUseCase: GetProductsUseCaseProtocol
+    @Injected(\.productRepository) private var repository: ProductRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
 
-    public init(
-        getProductsUseCase: GetProductsUseCaseProtocol,
-        repository: ProductRepositoryProtocol
-    ) {
-        self.getProductsUseCase = getProductsUseCase
-        self.repository = repository
+    public init() {
         setupSearchDebounce()
     }
 

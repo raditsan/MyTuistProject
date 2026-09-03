@@ -1,5 +1,6 @@
 import XCTest
 import DomainProduct
+import FactoryKit
 @testable import DataProduct
 
 final class ProductRepositoryTests: XCTestCase {
@@ -8,11 +9,15 @@ final class ProductRepositoryTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
+        Container.shared.reset()
         mockRemoteDataSource = MockProductRemoteDataSource()
-        sut = ProductRepository(remoteDataSource: mockRemoteDataSource)
+        let ds = mockRemoteDataSource!
+        Container.shared.productRemoteDataSource.register { ds }
+        sut = ProductRepository()
     }
 
     override func tearDown() {
+        Container.shared.reset()
         mockRemoteDataSource = nil
         sut = nil
         super.tearDown()

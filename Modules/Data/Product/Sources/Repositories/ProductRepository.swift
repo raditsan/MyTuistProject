@@ -1,8 +1,11 @@
 import Foundation
 import DomainProduct
+import FactoryKit
 
-public final class ProductRepository: ProductRepositoryProtocol {
-    private let remoteDataSource: ProductRemoteDataSourceProtocol
+public final class ProductRepository: ProductRepositoryProtocol, @unchecked Sendable {
+    @Injected(\.productRemoteDataSource) private var remoteDataSource: ProductRemoteDataSourceProtocol
+
+    public init() {}
 
     public init(remoteDataSource: ProductRemoteDataSourceProtocol) {
         self.remoteDataSource = remoteDataSource
