@@ -1,5 +1,7 @@
 import ProjectDescription
 
+let deploymentTargets: DeploymentTargets = .iOS("15.0")
+
 let project = Project(
     name: "MyTuistProject",
     targets: [
@@ -9,6 +11,7 @@ let project = Project(
             destinations: .iOS,
             product: .app,
             bundleId: "dev.tuist.MyTuistProject",
+            deploymentTargets: deploymentTargets,
             infoPlist: .extendingDefault(
                 with: [
                     "UILaunchScreen": [
@@ -50,6 +53,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.MyTuistProjectTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "MyTuistProject/Tests/**"
@@ -65,6 +69,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.CoreNetwork",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Core/Network/Sources/**"
             ],
@@ -77,6 +82,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.CoreNetworkTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Core/Network/Tests/**"
@@ -90,6 +96,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.CoreDesignSystem",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Core/DesignSystem/Sources/**"
             ],
@@ -100,6 +107,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.CoreNavigation",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Core/Navigation/Sources/**"
             ],
@@ -113,6 +121,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.CoreNavigationTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Core/Navigation/Tests/**"
@@ -128,6 +137,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.DomainProduct",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Modules/Domain/Product/Sources/**"
             ],
@@ -140,6 +150,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.DomainProductTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Modules/Domain/Product/Tests/**"
@@ -156,6 +167,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.DataProduct",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Modules/Data/Product/Sources/**"
             ],
@@ -170,6 +182,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.DataProductTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Modules/Data/Product/Tests/**"
@@ -188,6 +201,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.FeatureProduct",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Features/Product/Sources/**"
             ],
@@ -203,6 +217,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.FeatureProductTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Features/Product/Tests/**"
@@ -220,6 +235,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.FeatureProductDetail",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Features/ProductDetail/Sources/**"
             ],
@@ -235,6 +251,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.FeatureProductDetailTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Features/ProductDetail/Tests/**"
@@ -252,6 +269,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.FeatureSplash",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Features/Splash/Sources/**"
             ],
@@ -266,6 +284,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.FeatureSplashTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Features/Splash/Tests/**"
@@ -282,6 +301,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.FeatureDeeplinkLoader",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Features/DeeplinkLoader/Sources/**"
             ],
@@ -297,6 +317,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.FeatureDeeplinkLoaderTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Features/DeeplinkLoader/Tests/**"
@@ -314,6 +335,7 @@ let project = Project(
             destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.FeatureFavorites",
+            deploymentTargets: deploymentTargets,
             sources: [
                 "Features/Favorites/Sources/**"
             ],
@@ -329,6 +351,7 @@ let project = Project(
             destinations: .iOS,
             product: .unitTests,
             bundleId: "dev.tuist.FeatureFavoritesTests",
+            deploymentTargets: deploymentTargets,
             infoPlist: .default,
             sources: [
                 "Features/Favorites/Tests/**"
