@@ -30,11 +30,14 @@ final class ProductDetailDeeplinkFlowTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        router = AppRouter(navigationController: UINavigationController())
+        let testRouter = AppRouter(navigationController: UINavigationController())
+        self.router = testRouter
+        Container.shared.router.register { testRouter }
     }
 
     override func tearDown() {
         router = nil
+        Container.shared.reset()
         super.tearDown()
     }
 
@@ -43,7 +46,7 @@ final class ProductDetailDeeplinkFlowTests: XCTestCase {
         let sut = ProductDetailDeeplinkFlow(productId: 42)
 
         var actionsReceived: [DeeplinkFlowUIAction] = []
-        await sut.execute(router: router) { action in
+        await sut.execute { action in
             actionsReceived.append(action)
         }
 
@@ -57,7 +60,7 @@ final class ProductDetailDeeplinkFlowTests: XCTestCase {
         let sut = ProductDetailDeeplinkFlow(productId: 42)
 
         var lastError: String?
-        await sut.execute(router: router) { action in
+        await sut.execute { action in
             if case let .setError(error) = action {
                 lastError = error
             }

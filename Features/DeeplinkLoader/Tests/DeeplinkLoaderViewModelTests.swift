@@ -7,7 +7,7 @@ private final class MockDeeplinkFlow: DeeplinkFlow {
     var shouldFail: Bool = false
     var executionCount = 0
 
-    func execute(router: AppRouter, update: @escaping DeeplinkFlowUpdate) async {
+    func execute(update: @escaping DeeplinkFlowUpdate) async {
         executionCount += 1
         update(.setLoading(true, message: "Testing..."))
 
@@ -25,19 +25,16 @@ private final class MockDeeplinkFlow: DeeplinkFlow {
 final class DeeplinkLoaderViewModelTests: XCTestCase {
     private var mockFlow: MockDeeplinkFlow!
     private var sut: DeeplinkLoaderViewModel!
-    private var router: AppRouter!
 
     override func setUp() {
         super.setUp()
         mockFlow = MockDeeplinkFlow()
         sut = DeeplinkLoaderViewModel(flow: mockFlow)
-        router = AppRouter(navigationController: UINavigationController())
     }
 
     override func tearDown() {
         sut = nil
         mockFlow = nil
-        router = nil
         super.tearDown()
     }
 
@@ -49,7 +46,7 @@ final class DeeplinkLoaderViewModelTests: XCTestCase {
     func test_execute_whenSuccess_clearsLoadingAndError() async {
         mockFlow.shouldFail = false
 
-        await sut.execute(router: router)
+        await sut.execute()
 
         XCTAssertFalse(sut.isLoading)
         XCTAssertNil(sut.errorMessage)
@@ -59,7 +56,7 @@ final class DeeplinkLoaderViewModelTests: XCTestCase {
     func test_execute_whenFails_setsErrorMessage() async {
         mockFlow.shouldFail = true
 
-        await sut.execute(router: router)
+        await sut.execute()
 
         XCTAssertFalse(sut.isLoading)
         XCTAssertEqual(sut.errorMessage, "Mock Error")
