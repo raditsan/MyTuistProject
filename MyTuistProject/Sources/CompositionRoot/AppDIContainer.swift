@@ -6,6 +6,7 @@ import FeatureSplash
 import FeatureDeeplinkLoader
 import FeatureProduct
 import FeatureProductDetail
+import FeatureFavorites
 import FactoryKit
 
 @MainActor
@@ -36,6 +37,11 @@ public final class AppDIContainer: ObservableObject {
                     return AnyView(ProductDetailView(productId: product.id))
                 case .detailById(let id):
                     return AnyView(ProductDetailView(productId: id))
+                }
+            case .favorites(let favRoute):
+                switch favRoute {
+                case .list:
+                    return AnyView(FavoritesView())
                 }
             }
         }

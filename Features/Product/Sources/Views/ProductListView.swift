@@ -33,6 +33,17 @@ public struct ProductListView: View {
         .background(DesignTokens.Colors.background.ignoresSafeArea())
         .navigationTitle("Katalog Produk")
         .searchable(text: $viewModel.searchQuery, prompt: "Cari produk...")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    router.navigate(.favorites(.list))
+                } label: {
+                    Image(systemName: "heart.fill")
+                        .foregroundColor(DesignTokens.Colors.primary)
+                }
+                .accessibilityLabel("Menu Favorit")
+            }
+        }
         .task {
             await viewModel.onAppear()
         }

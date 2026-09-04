@@ -10,6 +10,7 @@ public enum AppRouteDestination: Hashable, Sendable {
     case productDetail
     case deeplinkFetch
     case product(ProductDestination)
+    case favorites(FavoritesDestination)
 }
 
 // MARK: - Feature Destination Protocol
