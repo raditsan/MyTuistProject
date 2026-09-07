@@ -51,19 +51,11 @@ public final class AppRouter: ObservableObject {
 
     // MARK: - Deep Link Engine
 
+    private let deepLinkHandler = DeepLinkHandler()
+
     /// Handles an incoming deep link URL and navigates to the resolved route.
     public func handle(url: URL) {
-        let host = url.host?.lowercased()
-        let pathComponents = url.pathComponents.filter { $0 != "/" }
-
-        let fullPath: [String]
-        if let host, !pathComponents.contains(host) {
-            fullPath = [host] + pathComponents
-        } else {
-            fullPath = pathComponents
-        }
-
-        if let resolvedRoute = AppRoute.deepLinkResolve(pathComponents: fullPath) {
+        if let resolvedRoute = deepLinkHandler.parse(url: url) {
             if case let .deeplinkFetch(entryPoint) = resolvedRoute {
                 deeplinkLoader(entryPoint)
             } else {

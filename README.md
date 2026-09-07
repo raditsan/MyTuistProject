@@ -494,16 +494,28 @@ Features/Cart/
    ```
 3. Tambahkan `.cart(CartRoute)` di `AppRoute.swift` dan `.cart(CartDestination)` di `AppRouteDestination.swift`.
 
-#### Langkah 1.4: Daftarkan View Factory di `AppDIContainer.swift`
+#### Langkah 1.4: Buat Route Handler di `MyTuistProject/Sources/CompositionRoot/Routes/CartRouteHandler.swift`
 ```swift
+import SwiftUI
+import CoreNavigation
 import FeatureCart
 
+@MainActor
+public struct CartRouteHandler {
+    public static func buildView(for route: CartRoute) -> AnyView {
+        switch route {
+        case .cartList:
+            return AnyView(CartView())
+        }
+    }
+}
+```
+
+Dan hubungkan di [AppDIContainer.swift](file:///Users/raditsan/MyData/Project/xcode-project/CobaTuist/MyTuistProject/MyTuistProject/Sources/CompositionRoot/AppDIContainer.swift):
+```swift
 // Di dalam setupNavigation():
 case .cart(let cartRoute):
-    switch cartRoute {
-    case .cartList:
-        return AnyView(CartView())
-    }
+    return CartRouteHandler.buildView(for: cartRoute)
 ```
 
 ---

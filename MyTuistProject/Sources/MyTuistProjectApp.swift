@@ -1,6 +1,5 @@
 import SwiftUI
 import CoreNavigation
-import FeatureProduct
 import FactoryKit
 
 @main

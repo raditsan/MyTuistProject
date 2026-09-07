@@ -55,6 +55,9 @@ public enum AppRoute: AppRouteType {
             }
             return .product(.list)
 
+        case "favorites", "favorite":
+            return FavoritesRoute.deepLinkResolve(pathComponents: pathComponents)
+
         default:
             return nil
         }

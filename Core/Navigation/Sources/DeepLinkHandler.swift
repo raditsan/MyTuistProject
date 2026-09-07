@@ -1,6 +1,4 @@
 import Foundation
-import CoreNavigation
-import FeatureProduct
 
 public struct DeepLinkHandler: Sendable {
     public init() {}

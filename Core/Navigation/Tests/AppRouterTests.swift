@@ -121,6 +121,17 @@ final class AppRouterTests: XCTestCase {
         XCTAssertEqual(resolvedRoute4, .deeplinkFetch(.product(id: 42)))
     }
 
+    func test_deepLinkHandler_parse_resolvesRoutesDirectly() {
+        let handler = DeepLinkHandler()
+
+        XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product")!), .product(.list))
+        XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product/42")!), .product(.detailById(42)))
+        XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product-preload/42")!), .deeplinkFetch(.product(id: 42)))
+        XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product/preload/42")!), .deeplinkFetch(.product(id: 42)))
+        XCTAssertEqual(handler.parse(url: URL(string: "mytuist://favorites")!), .favorites(.list))
+        XCTAssertNil(handler.parse(url: URL(string: "mytuist://unknown")!))
+    }
+
     func test_handleURL_navigatesToResolvedRoute() {
         // Given
         AppRouter.viewBuilder = { route in

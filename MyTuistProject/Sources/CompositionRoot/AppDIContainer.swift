@@ -1,12 +1,6 @@
 import SwiftUI
 import CoreNavigation
-import DomainProduct
 import DataProduct
-import FeatureSplash
-import FeatureDeeplinkLoader
-import FeatureProduct
-import FeatureProductDetail
-import FeatureFavorites
 import FactoryKit
 
 @MainActor
@@ -26,23 +20,13 @@ public final class AppDIContainer: ObservableObject {
         AppRouter.viewBuilder = { route in
             switch route {
             case .splash:
-                return AnyView(SplashView())
+                return SplashRouteHandler.buildView()
             case .deeplinkFetch(let entryPoint):
-                return AnyView(DeeplinkLoaderView(entryPoint: entryPoint))
+                return DeeplinkRouteHandler.buildView(for: entryPoint)
             case .product(let productRoute):
-                switch productRoute {
-                case .list:
-                    return AnyView(ProductListView())
-                case .detail(let product):
-                    return AnyView(ProductDetailView(productId: product.id))
-                case .detailById(let id):
-                    return AnyView(ProductDetailView(productId: id))
-                }
+                return ProductRouteHandler.buildView(for: productRoute)
             case .favorites(let favRoute):
-                switch favRoute {
-                case .list:
-                    return AnyView(FavoritesView())
-                }
+                return FavoritesRouteHandler.buildView(for: favRoute)
             }
         }
     }
