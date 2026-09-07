@@ -5,6 +5,10 @@ import FeatureSplash
 @MainActor
 public struct SplashRouteHandler {
     public static func buildView() -> AnyView {
-        AnyView(SplashView())
+        @ViewBuilder
+        var view: some View {
+            SplashView()
+        }
+        return AnyView(view)
     }
 }

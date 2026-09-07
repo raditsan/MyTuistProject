@@ -512,10 +512,14 @@ import FeatureCart
 @MainActor
 public struct CartRouteHandler {
     public static func buildView(for route: CartRoute) -> AnyView {
-        switch route {
-        case .cartList:
-            return AnyView(CartView())
+        @ViewBuilder
+        var view: some View {
+            switch route {
+            case .cartList:
+                CartView()
+            }
         }
+        return AnyView(view)
     }
 }
 ```

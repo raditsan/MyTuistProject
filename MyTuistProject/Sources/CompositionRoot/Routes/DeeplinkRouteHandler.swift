@@ -5,6 +5,10 @@ import FeatureDeeplinkLoader
 @MainActor
 public struct DeeplinkRouteHandler {
     public static func buildView(for entryPoint: DeeplinkEntryPoint) -> AnyView {
-        AnyView(DeeplinkLoaderView(entryPoint: entryPoint))
+        @ViewBuilder
+        var view: some View {
+            DeeplinkLoaderView(entryPoint: entryPoint)
+        }
+        return AnyView(view)
     }
 }

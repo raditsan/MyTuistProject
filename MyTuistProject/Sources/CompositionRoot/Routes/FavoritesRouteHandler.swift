@@ -5,9 +5,13 @@ import FeatureFavorites
 @MainActor
 public struct FavoritesRouteHandler {
     public static func buildView(for route: FavoritesRoute) -> AnyView {
-        switch route {
-        case .list:
-            return AnyView(FavoritesView())
+        @ViewBuilder
+        var view: some View {
+            switch route {
+            case .list:
+                FavoritesView()
+            }
         }
+        return AnyView(view)
     }
 }
