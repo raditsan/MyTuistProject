@@ -88,37 +88,22 @@ final class AppRouterTests: XCTestCase {
     }
 
     func test_deepLinkResolve_resolvesProductListAndDetail() {
-        // When: URL "mytuist://product"
-        let url1 = URL(string: "mytuist://product")!
-        let pathComponents1 = [url1.host!].compactMap { $0 } + url1.pathComponents.filter { $0 != "/" }
-        let resolvedRoute1 = AppRoute.deepLinkResolve(pathComponents: pathComponents1)
+        // ProductRoute
+        XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["product"]), .product(.list))
+        XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["products"]), .product(.list))
+        XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["product", "42"]), .product(.detailById(42)))
+        XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["product", "preload", "42"]), .deeplinkFetch(.product(id: 42)))
 
-        // Then
-        XCTAssertEqual(resolvedRoute1, .product(.list))
+        // FavoritesRoute
+        XCTAssertEqual(FavoritesRoute.deepLinkResolve(pathComponents: ["favorites"]), .favorites(.list))
+        XCTAssertEqual(FavoritesRoute.deepLinkResolve(pathComponents: ["favorite"]), .favorites(.list))
 
-        // When: URL "mytuist://product/42"
-        let url2 = URL(string: "mytuist://product/42")!
-        let pathComponents2 = [url2.host!].compactMap { $0 } + url2.pathComponents.filter { $0 != "/" }
-        let resolvedRoute2 = AppRoute.deepLinkResolve(pathComponents: pathComponents2)
+        // ProductRoute
+        XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["product-preload", "42"]), .deeplinkFetch(.product(id: 42)))
 
-        // Then
-        XCTAssertEqual(resolvedRoute2, .product(.detailById(42)))
-
-        // When: URL "mytuist://product-preload/42"
-        let url3 = URL(string: "mytuist://product-preload/42")!
-        let pathComponents3 = [url3.host!].compactMap { $0 } + url3.pathComponents.filter { $0 != "/" }
-        let resolvedRoute3 = AppRoute.deepLinkResolve(pathComponents: pathComponents3)
-
-        // Then
-        XCTAssertEqual(resolvedRoute3, .deeplinkFetch(.product(id: 42)))
-
-        // When: URL "mytuist://product/preload/42"
-        let url4 = URL(string: "mytuist://product/preload/42")!
-        let pathComponents4 = [url4.host!].compactMap { $0 } + url4.pathComponents.filter { $0 != "/" }
-        let resolvedRoute4 = AppRoute.deepLinkResolve(pathComponents: pathComponents4)
-
-        // Then
-        XCTAssertEqual(resolvedRoute4, .deeplinkFetch(.product(id: 42)))
+        // AppRoute
+        XCTAssertEqual(AppRoute.deepLinkResolve(pathComponents: ["splash"]), .splash)
+        XCTAssertNil(AppRoute.deepLinkResolve(pathComponents: ["unknown"]))
     }
 
     func test_deepLinkHandler_parse_resolvesRoutesDirectly() {
@@ -130,6 +115,40 @@ final class AppRouterTests: XCTestCase {
         XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product/preload/42")!), .deeplinkFetch(.product(id: 42)))
         XCTAssertEqual(handler.parse(url: URL(string: "mytuist://favorites")!), .favorites(.list))
         XCTAssertNil(handler.parse(url: URL(string: "mytuist://unknown")!))
+    }
+
+    func test_deepLinkHandler_parse_withQueryParameters() {
+        let handler = DeepLinkHandler()
+
+        // 1. Direct query param: ?id=42
+        XCTAssertEqual(
+            handler.parse(url: URL(string: "mytuist://product?id=42")!),
+            .product(.detailById(42))
+        )
+
+        // 2. Query param with path: /detail?id=42
+        XCTAssertEqual(
+            handler.parse(url: URL(string: "mytuist://product/detail?id=42")!),
+            .product(.detailById(42))
+        )
+
+        // 3. Query param with preload flag: ?id=42&preload=true
+        XCTAssertEqual(
+            handler.parse(url: URL(string: "mytuist://product?id=42&preload=true")!),
+            .deeplinkFetch(.product(id: 42))
+        )
+
+        // 4. Query param with preload shorthand: ?preload=42
+        XCTAssertEqual(
+            handler.parse(url: URL(string: "mytuist://product?preload=42")!),
+            .deeplinkFetch(.product(id: 42))
+        )
+
+        // 5. Path preload with query id: /preload?id=42
+        XCTAssertEqual(
+            handler.parse(url: URL(string: "mytuist://product/preload?id=42")!),
+            .deeplinkFetch(.product(id: 42))
+        )
     }
 
     func test_handleURL_navigatesToResolvedRoute() {

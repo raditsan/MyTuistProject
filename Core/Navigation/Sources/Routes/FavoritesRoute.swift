@@ -17,7 +17,10 @@ public enum FavoritesRoute: AppRouteType {
 
     public static var deepLinkHost: String? { "favorites" }
 
-    public static func deepLinkResolve(pathComponents: [String]) -> AppRoute? {
+    public static func deepLinkResolve(
+        pathComponents: [String],
+        queryParameters: [String: String] = [:]
+    ) -> AppRoute? {
         guard pathComponents.first == deepLinkHost || pathComponents.first == "favorite" else { return nil }
         return .favorites(.list)
     }

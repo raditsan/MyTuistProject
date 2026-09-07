@@ -421,11 +421,20 @@ URL Scheme: mytuist://product-preload/10
     router.replaceRoot(.product(.detail(product)))
 ```
 
-### URL Schemes yang Didukung:
-- `mytuist://product` ➔ Membuka list katalog produk.
-- `mytuist://product/5` ➔ Membuka detail produk ID 5 secara langsung.
-- `mytuist://product-preload/5` ➔ Preload API detail produk ID 5 via loader.
-- `mytuist://favorites` ➔ Membuka halaman favorit.
+### URL Schemes & Parameter yang Didukung:
+- **Katalog Produk**:
+  - `mytuist://product` atau `mytuist://products`
+- **Detail Produk Langsung (Direct)**:
+  - Query parameter: `mytuist://product?id=5` atau `mytuist://product/detail?id=5`
+  - Path parameter: `mytuist://product/5`
+- **Preload Produk (Loader Screen)**:
+  - Query parameter: `mytuist://product?id=5&preload=true` atau `mytuist://product?preload=5`
+  - Path + Query: `mytuist://product/preload?id=5`
+  - Path parameter: `mytuist://product/preload/5` atau `mytuist://product-preload/5`
+- **Halaman Favorit**:
+  - `mytuist://favorites` atau `mytuist://favorite`
+- **Splash Screen**:
+  - `mytuist://splash`
 
 ---
 
@@ -557,12 +566,40 @@ case .cart(let cartRoute):
 
 ### 4. Menambah Deep Link Baru
 
-Buka `Core/Navigation/Sources/Routes/AppRoute.swift` dan tambahkan handler di `deepLinkResolve`:
+Deep link ditangani secara terdesentralisasi langsung pada rute fiturnya masing-masing (`CartRoute.swift`), bukan di `AppRoute.swift`:
+
+1. Implementasikan `deepLinkResolve` di `Core/Navigation/Sources/Routes/CartRoute.swift` (mendukung path dan query parameter):
 ```swift
-case "cart":
-    return .cart(.cartList)
+public enum CartRoute: AppRouteType {
+    case cartList
+    
+    public static var deepLinkHost: String? { "cart" }
+
+    public static func deepLinkResolve(
+        pathComponents: [String],
+        queryParameters: [String: String] = [:]
+    ) -> AppRoute? {
+        let host = pathComponents.first ?? ""
+        guard host == deepLinkHost || host == "carts" else { return nil }
+        return .cart(.cartList)
+    }
+}
 ```
-Sekarang `mytuist://cart` akan otomatis diarahkan ke halaman keranjang!
+
+2. Daftarkan tipe rute baru ke [DeepLinkHandler.swift](file:///Users/raditsan/MyData/Project/xcode-project/CobaTuist/MyTuistProject/Core/Navigation/Sources/DeepLinkHandler.swift):
+```swift
+// Di dalam DeepLinkHandler.swift:
+public private(set) static var registeredRoutes: [any AppRouteType.Type] = [
+    ProductRoute.self,
+    FavoritesRoute.self,
+    CartRoute.self,
+    AppRoute.self
+]
+
+// Atau didaftarkan secara dinamis:
+DeepLinkHandler.register(CartRoute.self)
+```
+Sekarang `mytuist://cart` akan otomatis diurai dan diarahkan ke halaman keranjang!
 
 ---
 

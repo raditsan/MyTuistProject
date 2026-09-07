@@ -33,30 +33,15 @@ public enum AppRoute: AppRouteType {
     // MARK: - Deep Link
     public static var deepLinkHost: String? { nil }
 
-    public static func deepLinkResolve(pathComponents: [String]) -> AppRoute? {
+    public static func deepLinkResolve(
+        pathComponents: [String],
+        queryParameters: [String: String] = [:]
+    ) -> AppRoute? {
         let host = pathComponents.first ?? ""
-        let subComponents = Array(pathComponents.dropFirst())
 
         switch host {
-        case "product-preload", "products-preload":
-            if let idString = subComponents.first, let id = Int(idString) {
-                return .deeplinkFetch(.product(id: id))
-            }
-            return .deeplinkFetch(.general)
-
-        case "products", "product":
-            // Support mytuist://product/preload/5
-            if subComponents.first == "preload", let idString = subComponents.dropFirst().first, let id = Int(idString) {
-                return .deeplinkFetch(.product(id: id))
-            }
-            // Support mytuist://product/5
-            if let idString = subComponents.first, let id = Int(idString) {
-                return .product(.detailById(id))
-            }
-            return .product(.list)
-
-        case "favorites", "favorite":
-            return FavoritesRoute.deepLinkResolve(pathComponents: pathComponents)
+        case "splash":
+            return .splash
 
         default:
             return nil

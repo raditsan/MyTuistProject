@@ -30,12 +30,16 @@ public protocol AppRouteType: Hashable {
     var sheetConfiguration: SheetConfiguration? { get }
     static var deepLinkHost: String? { get }
     static func deepLinkResolve(pathComponents: [String]) -> AppRoute?
+    static func deepLinkResolve(pathComponents: [String], queryParameters: [String: String]) -> AppRoute?
 }
 
 public extension AppRouteType {
     var sheetConfiguration: SheetConfiguration? { nil }
     static var deepLinkHost: String? { nil }
     static func deepLinkResolve(pathComponents: [String]) -> AppRoute? { nil }
+    static func deepLinkResolve(pathComponents: [String], queryParameters: [String: String]) -> AppRoute? {
+        deepLinkResolve(pathComponents: pathComponents)
+    }
 }
 
 public final class RouteHostingController<Content: View>: UIHostingController<Content>, RouteIdentifiable {
