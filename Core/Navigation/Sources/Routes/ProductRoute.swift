@@ -1,16 +1,14 @@
 import SwiftUI
-import DomainProduct
 
 public enum ProductRoute: AppRouteType {
     case list
-    case detail(Product)
-    case detailById(Int)
+    case detail(ProductScreenParam)
 
     public var destination: AppRouteDestination {
         switch self {
         case .list:
             return .product(.list)
-        case .detail, .detailById:
+        case .detail:
             return .product(.detail)
         }
     }
@@ -77,9 +75,18 @@ public enum ProductRoute: AppRouteType {
         }
 
         if let resolvedId {
-            return .product(.detailById(resolvedId))
+            return .product(.detail(.init(id: resolvedId)))
         }
 
         return .product(.list)
+    }
+
+    public static func detail(id: Int) -> ProductRoute {
+        .detail(.init(id: id))
+    }
+
+    @available(*, deprecated, renamed: "detail")
+    public static func detailById(_ id: Int) -> ProductRoute {
+        .detail(.init(id: id))
     }
 }

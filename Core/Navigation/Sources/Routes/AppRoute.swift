@@ -1,5 +1,4 @@
 import SwiftUI
-import DomainProduct
 
 // MARK: - Global App Route Enum
 public enum AppRoute: AppRouteType {

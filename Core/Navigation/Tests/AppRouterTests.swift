@@ -91,7 +91,7 @@ final class AppRouterTests: XCTestCase {
         // ProductRoute
         XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["product"]), .product(.list))
         XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["products"]), .product(.list))
-        XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["product", "42"]), .product(.detailById(42)))
+        XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["product", "42"]), .product(.detail(id: 42)))
         XCTAssertEqual(ProductRoute.deepLinkResolve(pathComponents: ["product", "preload", "42"]), .deeplinkFetch(.product(id: 42)))
 
         // FavoritesRoute
@@ -110,7 +110,7 @@ final class AppRouterTests: XCTestCase {
         let handler = DeepLinkHandler()
 
         XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product")!), .product(.list))
-        XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product/42")!), .product(.detailById(42)))
+        XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product/42")!), .product(.detail(id: 42)))
         XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product-preload/42")!), .deeplinkFetch(.product(id: 42)))
         XCTAssertEqual(handler.parse(url: URL(string: "mytuist://product/preload/42")!), .deeplinkFetch(.product(id: 42)))
         XCTAssertEqual(handler.parse(url: URL(string: "mytuist://favorites")!), .favorites(.list))
@@ -123,13 +123,13 @@ final class AppRouterTests: XCTestCase {
         // 1. Direct query param: ?id=42
         XCTAssertEqual(
             handler.parse(url: URL(string: "mytuist://product?id=42")!),
-            .product(.detailById(42))
+            .product(.detail(id: 42))
         )
 
         // 2. Query param with path: /detail?id=42
         XCTAssertEqual(
             handler.parse(url: URL(string: "mytuist://product/detail?id=42")!),
-            .product(.detailById(42))
+            .product(.detail(id: 42))
         )
 
         // 3. Query param with preload flag: ?id=42&preload=true

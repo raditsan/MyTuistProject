@@ -218,7 +218,7 @@ graph TD
     Data --> Net
 
     %% Core Dependencies
-    Nav --> Domain
+    Nav --> Loc
     Net --> Loc
     DS --> Loc
 ```
@@ -740,7 +740,7 @@ final class ProductListViewModelTests: XCTestCase {
 
 #### 2. Circular Dependency Antar Feature
 - **Penyebab**: Mencoba meng-import `FeatureProductDetail` di dalam `FeatureProduct`.
-- **Solusi**: Jangan pernah import sesama Feature. Gunakan `router.navigate(.product(.detail(item)))` via `CoreNavigation`.
+- **Solusi**: Jangan pernah import sesama Feature. Gunakan `router.navigate(.product(.detail(id: item.id)))` via `CoreNavigation`.
 
 #### 3. Error Deep Link NSOSStatusErrorDomain -10814
 - **Penyebab**: Simulator belum pernah meng-install / menjalankan aplikasi dengan `CFBundleURLSchemes` terdaftar.

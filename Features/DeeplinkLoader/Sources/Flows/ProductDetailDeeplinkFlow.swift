@@ -23,7 +23,7 @@ public final class ProductDetailDeeplinkFlow: DeeplinkFlow {
             let product = try await getProductDetailUseCase.execute(id: productId)
             update(.setLoading(false, message: nil))
             await router.dismissDeeplinkLoader()
-            router.navigate(to: .product(.detail(product)))
+            router.navigate(to: .product(.detail(id: product.id)))
         } catch {
             update(.setLoading(false, message: nil))
             update(.setError(error.localizedDescription))

@@ -1,7 +1,6 @@
 import Testing
 import SwiftUI
 import CoreNavigation
-import DomainProduct
 @testable import MyTuistProject
 
 @MainActor
@@ -22,20 +21,8 @@ struct MyTuistProjectTests {
         let productListView = ProductRouteHandler.buildView(for: .list)
         #expect(type(of: productListView) == AnyView.self)
 
-        let mockProduct = Product(
-            id: 1,
-            title: "Test",
-            price: 9.99,
-            description: "Test Desc",
-            category: "electronics",
-            image: "",
-            rating: ProductRating(rate: 4.5, count: 10)
-        )
-        let productDetailView = ProductRouteHandler.buildView(for: .detail(mockProduct))
+        let productDetailView = ProductRouteHandler.buildView(for: .detail(.init(id: 1)))
         #expect(type(of: productDetailView) == AnyView.self)
-
-        let productDetailByIdView = ProductRouteHandler.buildView(for: .detailById(1))
-        #expect(type(of: productDetailByIdView) == AnyView.self)
 
         // Favorites Route Handler
         let favoritesView = FavoritesRouteHandler.buildView(for: .list)

@@ -151,7 +151,6 @@ let project = Project(
             ],
             dependencies: [
                 .external(name: "FactoryKit"),
-                .target(name: "DomainProduct"),
                 .target(name: "CoreLocalization")
             ]
         ),

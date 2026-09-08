@@ -1,6 +1,5 @@
 import SwiftUI
 import CoreNavigation
-import DomainProduct
 import FeatureProduct
 import FeatureProductDetail
 
@@ -12,10 +11,8 @@ public struct ProductRouteHandler {
             switch route {
             case .list:
                 ProductListView()
-            case .detail(let product):
-                ProductDetailView(productId: product.id)
-            case .detailById(let id):
-                ProductDetailView(productId: id)
+            case .detail(let param):
+                ProductDetailView(productId: param.id)
             }
         }
         return AnyView(view)
