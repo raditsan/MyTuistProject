@@ -3,6 +3,7 @@ import Foundation
 public struct DeepLinkHandler: Sendable {
     /// All registered route types that support deeplink resolution.
     public private(set) static var registeredRoutes: [any AppRouteType.Type] = [
+        CartRoute.self,
         ProductRoute.self,
         FavoritesRoute.self,
         AppRoute.self

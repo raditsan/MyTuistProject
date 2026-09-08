@@ -49,6 +49,7 @@ let project = Project(
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNetwork"),
                 .target(name: "CoreLocalization"),
+                .target(name: "FeatureCart"),
             ]
         ),
 
@@ -111,6 +112,7 @@ let project = Project(
             dependencies: [
                 .external(name: "FactoryKit"),
                 .target(name: "CoreLocalization"),
+                .target(name: "FeatureCart"),
             ]
         ),
         .target(
@@ -249,6 +251,7 @@ let project = Project(
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
                 .target(name: "CoreLocalization"),
+                .target(name: "FeatureCart"),
             ]
         ),
         .target(
@@ -284,6 +287,7 @@ let project = Project(
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
                 .target(name: "CoreLocalization"),
+                .target(name: "FeatureCart"),
             ]
         ),
         .target(
@@ -318,6 +322,7 @@ let project = Project(
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
                 .target(name: "CoreLocalization"),
+                .target(name: "FeatureCart"),
             ]
         ),
         .target(
@@ -352,6 +357,7 @@ let project = Project(
                 .target(name: "CoreNavigation"),
                 .target(name: "DomainProduct"),
                 .target(name: "CoreLocalization"),
+                .target(name: "FeatureCart"),
             ]
         ),
         .target(
@@ -387,6 +393,7 @@ let project = Project(
                 .target(name: "CoreNavigation"),
                 .target(name: "DomainProduct"),
                 .target(name: "CoreLocalization"),
+                .target(name: "FeatureCart"),
             ]
         ),
         .target(
@@ -404,5 +411,38 @@ let project = Project(
                 .external(name: "FactoryKit")
             ]
         ),
+        // MARK: - Feature Cart
+        .target(
+            name: "FeatureCart",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.FeatureCart",
+            deploymentTargets: deploymentTargets,
+            sources: [
+                "Features/Cart/Sources/**"
+            ],
+            dependencies: [
+                .external(name: "FactoryKit"),
+                .target(name: "CoreDesignSystem"),
+                .target(name: "CoreNavigation"),
+                .target(name: "CoreLocalization"),
+            ]
+        ),
+        .target(
+            name: "FeatureCartTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.FeatureCartTests",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .default,
+            sources: [
+                "Features/Cart/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "FeatureCart"),
+                .external(name: "FactoryKit")
+            ]
+        ),
+
     ]
 )

@@ -6,6 +6,7 @@ public enum AppRoute: AppRouteType {
     case deeplinkFetch(DeeplinkEntryPoint)
     case product(ProductRoute)
     case favorites(FavoritesRoute)
+    case cart(CartRoute)
 
     public var destination: AppRouteDestination {
         switch self {
@@ -16,6 +17,8 @@ public enum AppRoute: AppRouteType {
         case .product(let route):
             return route.destination
         case .favorites(let route):
+            return route.destination
+        case .cart(let route):
             return route.destination
         }
     }

@@ -27,6 +27,8 @@ public final class AppDIContainer: ObservableObject {
                 return ProductRouteHandler.buildView(for: productRoute)
             case .favorites(let favRoute):
                 return FavoritesRouteHandler.buildView(for: favRoute)
+            case .cart(let cartRoute):
+                return CartRouteHandler.buildView(for: cartRoute)
             }
         }
     }

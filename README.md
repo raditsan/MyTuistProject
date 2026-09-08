@@ -514,7 +514,39 @@ URL Scheme: mytuist://product-preload/10
 
 ---
 
-## 🛠 Panduan Menambah Komponen Baru (Step-by-Step)
+## 🛠 Panduan Menambah Komponen Baru (Otomatis & Manual)
+
+### ⚡ Otomatis Menggunakan Makefile (Direkomendasikan)
+
+Tersedia perintah otomasi cepat untuk membuat Feature baru atau menambahkan Screen baru:
+
+```bash
+# 1. Menampilkan menu bantuan
+make help
+
+# 2. Membuat Feature Module baru lengkap:
+make feature name=Cart
+# Atau jalankan tanpa argumen untuk mode interaktif:
+make feature
+
+# 3. Menambahkan Screen baru ke Feature yang sudah ada:
+make screen feature=Cart name=Checkout
+# Atau jalankan tanpa argumen untuk memilih feature & screen interaktif:
+make screen
+```
+
+Perintah di atas secara otomatis akan:
+- Membuat direktori & file View, ViewModel, dan ViewModelTests.
+- Membuat Navigation Param (`<Screen>ScreenParam`) di `CoreNavigation` tanpa dependensi ke domain.
+- Mendaftarkan Destination (`<Feature>Destination`) dan Route (`<Feature>Route`).
+- Mendaftarkan ke `AppRoute`, `AppRouteDestination`, dan `DeepLinkHandler`.
+- Membuat/memperbarui `<Feature>RouteHandler` dan registrasi di `AppDIContainer`.
+- Mendaftarkan target di `Project.swift` (untuk feature baru).
+- Menjalankan `tuist generate --no-open` secara otomatis.
+
+---
+
+### 📖 Panduan Manual (Step-by-Step)
 
 ### 1. Menambah Fitur Baru (Feature Module)
 Misal membuat fitur keranjang belanja: `FeatureCart`.
