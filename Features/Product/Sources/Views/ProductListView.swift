@@ -2,12 +2,14 @@ import SwiftUI
 import DomainProduct
 import CoreDesignSystem
 import CoreNavigation
+import CoreLocalization
 import FactoryKit
 
 @MainActor
 public struct ProductListView: View {
     @Injected(\.router) private var router
     @StateObject private var viewModel: ProductListViewModel
+    @ObservedObject private var localizationManager = LocalizationManager.shared
 
     private let columns = [
         GridItem(.flexible(), spacing: DesignTokens.Spacing.md),
@@ -31,21 +33,55 @@ public struct ProductListView: View {
             contentView
         }
         .background(DesignTokens.Colors.background.ignoresSafeArea())
-        .navigationTitle("Katalog Produk")
-        .searchable(text: $viewModel.searchQuery, prompt: "Cari produk...")
+        .navigationTitle(L10n.Product.Catalog.title)
+        .searchable(text: $viewModel.searchQuery, prompt: L10n.Product.Catalog.searchPrompt)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    router.navigate(.favorites(.list))
-                } label: {
-                    Image(systemName: "heart.fill")
-                        .foregroundColor(DesignTokens.Colors.primary)
+                HStack(spacing: DesignTokens.Spacing.sm) {
+                    languageMenu
+
+                    Button {
+                        router.navigate(.favorites(.list))
+                    } label: {
+                        Image(systemName: "heart.fill")
+                            .foregroundColor(DesignTokens.Colors.primary)
+                    }
+                    .accessibilityLabel(L10n.Product.Catalog.favoriteMenu)
                 }
-                .accessibilityLabel("Menu Favorit")
             }
         }
         .task {
             await viewModel.onAppear()
+        }
+    }
+
+    // MARK: - Language Selector Menu
+    @ViewBuilder
+    private var languageMenu: some View {
+        Menu {
+            ForEach(AppLanguage.allCases) { lang in
+                Button {
+                    localizationManager.setLanguage(lang)
+                } label: {
+                    HStack {
+                        Text("\(lang.flag) \(lang.title)")
+                        if localizationManager.currentLanguage == lang {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(localizationManager.currentLanguage.flag)
+                Text(localizationManager.currentLanguage.shortCode)
+                    .font(.caption.bold())
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(DesignTokens.Colors.cardBackground)
+            .cornerRadius(DesignTokens.CornerRadius.sm)
         }
     }
 
@@ -56,12 +92,13 @@ public struct ProductListView: View {
             HStack(spacing: DesignTokens.Spacing.sm) {
                 ForEach(viewModel.categories, id: \.self) { category in
                     let isSelected = viewModel.selectedCategory == category
+                    let categoryTitle = category == "All" ? L10n.Common.all : category.capitalized
                     Button(action: {
                         Task {
                             await viewModel.selectCategory(category)
                         }
                     }) {
-                        Text(category.capitalized)
+                        Text(categoryTitle)
                             .font(.subheadline.weight(isSelected ? .bold : .medium))
                             .foregroundColor(isSelected ? .white : DesignTokens.Colors.textPrimary)
                             .padding(.horizontal, DesignTokens.Spacing.md)
@@ -84,16 +121,16 @@ public struct ProductListView: View {
     private var contentView: some View {
         switch viewModel.state {
         case .idle, .loading:
-            LoadingView(message: "Mengambil daftar produk...")
+            LoadingView(message: L10n.Product.Catalog.loading)
         case .empty:
             VStack(spacing: DesignTokens.Spacing.md) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 48))
                     .foregroundColor(DesignTokens.Colors.textSecondary)
-                Text("Tidak ada produk yang ditemukan")
+                Text(L10n.Product.Catalog.emptyTitle)
                     .font(.headline)
                     .foregroundColor(DesignTokens.Colors.textPrimary)
-                Text("Coba gunakan kata kunci pencarian atau kategori lain.")
+                Text(L10n.Product.Catalog.emptySubtitle)
                     .font(.subheadline)
                     .foregroundColor(DesignTokens.Colors.textSecondary)
             }
@@ -101,7 +138,7 @@ public struct ProductListView: View {
             .padding()
         case .failure(let errorMessage):
             ErrorView(
-                title: "Gagal Memuat Produk",
+                title: L10n.Product.Catalog.errorTitle,
                 message: errorMessage,
                 retryAction: {
                     Task { await viewModel.refresh() }

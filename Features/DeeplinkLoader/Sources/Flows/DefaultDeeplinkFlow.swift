@@ -1,5 +1,6 @@
 import Foundation
 import CoreNavigation
+import CoreLocalization
 import FactoryKit
 
 /// Fallback flow umum
@@ -9,7 +10,7 @@ public final class DefaultDeeplinkFlow: DeeplinkFlow {
     public init() {}
 
     public func execute(update: @escaping DeeplinkFlowUpdate) async {
-        update(.setLoading(true, message: "Memproses link..."))
+        update(.setLoading(true, message: L10n.Deeplink.Loading.process))
         update(.setError(nil))
 
         try? await Task.sleep(nanoseconds: 600_000_000)

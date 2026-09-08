@@ -1,6 +1,7 @@
 import Foundation
 import CoreNavigation
 import DomainProduct
+import CoreLocalization
 import FactoryKit
 
 /// Flow untuk fetch Product Detail dari Deeplink dengan preloading API
@@ -15,7 +16,7 @@ public final class ProductDetailDeeplinkFlow: DeeplinkFlow {
     }
 
     public func execute(update: @escaping DeeplinkFlowUpdate) async {
-        update(.setLoading(true, message: "Memuat detail produk #\(productId)..."))
+        update(.setLoading(true, message: L10n.Deeplink.Loading.product(productId)))
         update(.setError(nil))
 
         do {

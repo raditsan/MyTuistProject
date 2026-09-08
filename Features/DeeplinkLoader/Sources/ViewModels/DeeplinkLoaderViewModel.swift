@@ -1,11 +1,12 @@
 import Combine
 import Foundation
 import CoreNavigation
+import CoreLocalization
 
 @MainActor
 public final class DeeplinkLoaderViewModel: ObservableObject {
     @Published public var isLoading: Bool = true
-    @Published public var loadingMessage: String = "Memuat data..."
+    @Published public var loadingMessage: String = L10n.Deeplink.Loading.generic
     @Published public var errorMessage: String?
 
     public let flow: any DeeplinkFlow

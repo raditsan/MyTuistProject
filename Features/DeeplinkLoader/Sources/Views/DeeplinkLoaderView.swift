@@ -1,12 +1,14 @@
 import SwiftUI
 import CoreNavigation
 import CoreDesignSystem
+import CoreLocalization
 import FactoryKit
 
 @MainActor
 public struct DeeplinkLoaderView: View {
     @Injected(\.router) private var router: AppRouter
     @StateObject private var viewModel: DeeplinkLoaderViewModel
+    @ObservedObject private var localizationManager = LocalizationManager.shared
 
     public init(entryPoint: DeeplinkEntryPoint = .general) {
         _viewModel = StateObject(wrappedValue: DeeplinkLoaderViewModel(entryPoint: entryPoint))
@@ -62,7 +64,7 @@ public struct DeeplinkLoaderView: View {
                 .font(.system(size: 44))
                 .foregroundColor(DesignTokens.Colors.accent)
 
-            Text("Gagal Memuat Halaman")
+            Text(L10n.Deeplink.Error.title)
                 .font(.headline)
                 .foregroundColor(DesignTokens.Colors.textPrimary)
 
@@ -73,7 +75,7 @@ public struct DeeplinkLoaderView: View {
                 .padding(.horizontal, DesignTokens.Spacing.md)
 
             HStack(spacing: DesignTokens.Spacing.sm) {
-                Button("Kembali") {
+                Button(L10n.Deeplink.Button.back) {
                     if router.navigationController.viewControllers.count > 1 {
                         router.pop()
                     } else {
@@ -83,7 +85,7 @@ public struct DeeplinkLoaderView: View {
                 .buttonStyle(.bordered)
                 .tint(DesignTokens.Colors.textSecondary)
 
-                Button("Coba Lagi") {
+                Button(L10n.Deeplink.Button.retry) {
                     viewModel.retry(router: router)
                 }
                 .buttonStyle(.borderedProminent)

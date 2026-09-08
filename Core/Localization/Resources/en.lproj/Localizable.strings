@@ -1,0 +1,66 @@
+/* 
+  Localizable.strings (English)
+  MyTuistProject
+*/
+
+/* MARK: - Common */
+"common.app_name" = "MyTuistProject";
+"common.loading" = "Loading data...";
+"common.error.title" = "An Error Occurred";
+"common.retry" = "Try Again";
+"common.back" = "Back";
+"common.cancel" = "Cancel";
+"common.all" = "All";
+"common.search" = "Search...";
+"common.close" = "Close";
+
+/* MARK: - Language */
+"language.title" = "Select Language";
+"language.indonesian" = "Bahasa Indonesia";
+"language.english" = "English";
+"language.current" = "Language";
+
+/* MARK: - Splash */
+"splash.subtitle" = "Clean Architecture & Modular Engine";
+
+/* MARK: - Network Errors */
+"error.invalid_url" = "The requested URL is invalid.";
+"error.invalid_response" = "Invalid server response (Status code: %d).";
+"error.decoding" = "Failed to process data from server: %@";
+"error.server" = "Server error occurred: %@";
+"error.no_data" = "No data found.";
+"error.unknown" = "An unexpected error occurred: %@";
+
+/* MARK: - Product Catalog */
+"product.catalog.title" = "Product Catalog";
+"product.catalog.search_prompt" = "Search products...";
+"product.catalog.favorite_menu" = "Favorite Menu";
+"product.catalog.loading" = "Fetching product list...";
+"product.catalog.empty_title" = "No products found";
+"product.catalog.empty_subtitle" = "Try searching with different keywords or categories.";
+"product.catalog.error_title" = "Failed to Load Products";
+
+/* MARK: - Product Detail */
+"product.detail.title" = "Product Detail";
+"product.detail.loading" = "Loading product details...";
+"product.detail.not_found_title" = "Not Found";
+"product.detail.not_found_message" = "Product details not found.";
+"product.detail.error_title" = "Failed to Load Details";
+"product.detail.reviews_count" = "(%d reviews)";
+"product.detail.section_description" = "Description";
+
+/* MARK: - Favorites */
+"favorites.title" = "My Favorites";
+"favorites.empty_title" = "No Favorites Yet";
+"favorites.empty_subtitle" = "Products you mark as favorite will appear here.";
+
+/* MARK: - Deeplink Loader */
+"deeplink.loading.generic" = "Loading data...";
+"deeplink.loading.process" = "Processing link...";
+"deeplink.loading.product" = "Loading product details #%d...";
+"deeplink.error.title" = "Failed to Load Page";
+"deeplink.button.back" = "Back";
+"deeplink.button.retry" = "Try Again";
+
+"profile.title" = "My Profile";
+"profile.logout" = "Log Out";

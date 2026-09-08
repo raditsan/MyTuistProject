@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreDesignSystem
 import CoreNavigation
+import CoreLocalization
 import FactoryKit
 
 @MainActor
@@ -45,7 +46,7 @@ public struct SplashView: View {
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(DesignTokens.Colors.primary)
 
-                    Text("Clean Architecture & Modular Engine")
+                    Text(L10n.Splash.subtitle)
                         .font(.footnote)
                         .foregroundColor(DesignTokens.Colors.textSecondary)
                 }

@@ -2,12 +2,14 @@ import SwiftUI
 import DomainProduct
 import CoreDesignSystem
 import CoreNavigation
+import CoreLocalization
 import FactoryKit
 
 @MainActor
 public struct ProductDetailView: View {
     @Injected(\.router) private var router
     @StateObject private var viewModel: ProductDetailViewModel
+    @ObservedObject private var localizationManager = LocalizationManager.shared
 
     @MainActor
     public init(productId: Int) {
@@ -23,12 +25,12 @@ public struct ProductDetailView: View {
         Group {
             switch viewModel.state {
             case .idle, .loading:
-                LoadingView(message: "Memuat detail produk...")
+                LoadingView(message: L10n.Product.Detail.loading)
             case .empty:
-                ErrorView(title: "Tidak Ditemukan", message: "Detail produk tidak ditemukan.")
+                ErrorView(title: L10n.Product.Detail.notFoundTitle, message: L10n.Product.Detail.notFoundMessage)
             case .failure(let errorMessage):
                 ErrorView(
-                    title: "Gagal Memuat Detail",
+                    title: L10n.Product.Detail.errorTitle,
                     message: errorMessage,
                     retryAction: {
                         Task { await viewModel.loadDetail() }
@@ -38,7 +40,7 @@ public struct ProductDetailView: View {
                 productDetailContent(product: product)
             }
         }
-        .navigationTitle("Detail Produk")
+        .navigationTitle(L10n.Product.Detail.title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.loadDetail()
@@ -74,7 +76,7 @@ public struct ProductDetailView: View {
                             .foregroundColor(DesignTokens.Colors.accent)
                         Text(String(format: "%.1f", product.rating.rate))
                             .bold()
-                        Text("(\(product.rating.count) ulasan)")
+                        Text(L10n.Product.Detail.reviewsCount(product.rating.count))
                             .foregroundColor(DesignTokens.Colors.textSecondary)
                     }
                     .font(.subheadline)
@@ -94,7 +96,7 @@ public struct ProductDetailView: View {
                     .padding(.vertical, DesignTokens.Spacing.xs)
 
                 // Description
-                Text("Deskripsi")
+                Text(L10n.Product.Detail.sectionDescription)
                     .font(.headline)
                     .foregroundColor(DesignTokens.Colors.textPrimary)
 

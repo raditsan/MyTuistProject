@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocalization
 
 public struct ErrorView: View {
     private let title: String
@@ -6,7 +7,7 @@ public struct ErrorView: View {
     private let retryAction: (() -> Void)?
 
     public init(
-        title: String = "Terjadi Kesalahan",
+        title: String = L10n.Common.Error.title,
         message: String,
         retryAction: (() -> Void)? = nil
     ) {
@@ -33,7 +34,7 @@ public struct ErrorView: View {
 
             if let retryAction = retryAction {
                 Button(action: retryAction) {
-                    Label("Coba Lagi", systemImage: "arrow.clockwise")
+                    Label(L10n.Common.retry, systemImage: "arrow.clockwise")
                         .font(.headline)
                         .foregroundColor(.white)
                         .padding(.horizontal, DesignTokens.Spacing.lg)

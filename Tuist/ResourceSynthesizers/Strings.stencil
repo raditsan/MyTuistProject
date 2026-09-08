@@ -1,0 +1,73 @@
+// swiftlint:disable:this file_name
+// swiftlint:disable all
+// swift-format-ignore-file
+// swiftformat:disable all
+// Generated using Tuist with Custom Strings.stencil (Computed Properties & In-App Switching)
+
+import Foundation
+
+// MARK: - Strings
+
+{% macro parametersBlock types %}{% filter removeNewlines:"leading" %}
+  {% for type in types %}
+    {% if type == "String" %}
+    _ p{{forloop.counter}}: Any
+    {% else %}
+    _ p{{forloop.counter}}: {{type}}
+    {% endif %}
+    {{ ", " if not forloop.last }}
+  {% endfor %}
+{% endfilter %}{% endmacro %}
+{% macro argumentsBlock types %}{% filter removeNewlines:"leading" %}
+  {% for type in types %}
+    {% if type == "String" %}
+    String(describing: p{{forloop.counter}})
+    {% elif type == "UnsafeRawPointer" %}
+    Int(bitPattern: p{{forloop.counter}})
+    {% else %}
+    p{{forloop.counter}}
+    {% endif %}
+    {{ ", " if not forloop.last }}
+  {% endfor %}
+{% endfilter %}{% endmacro %}
+{% macro recursiveBlock table item %}
+  {% for string in item.strings %}
+  /// {{string.translation}}
+  {% if string.types %}
+  public static func {{string.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}({% call parametersBlock string.types %}) -> String {
+    return L10n.tr("{{table}}", "{{string.key}}", {% call argumentsBlock string.types %})
+  }
+  {% else %}
+  public static var {{string.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}: String {
+    return L10n.tr("{{table}}", "{{string.key}}")
+  }
+  {% endif %}
+  {% endfor %}
+  {% for child in item.children %}
+  public enum {{child.name|swiftIdentifier:"pretty"|escapeReservedKeywords}}: Sendable {
+    {% filter indent:2," ",true %}{% call recursiveBlock table child %}{% endfilter %}
+  }
+  {% endfor %}
+{% endmacro %}
+
+public enum L10n: Sendable {
+  {% for table in tables %}
+  {% call recursiveBlock table.name table.levels %}
+  {% endfor %}
+}
+
+public typealias CoreLocalizationStrings = L10n
+
+// MARK: - Implementation Details
+
+extension L10n {
+  private static func tr(_ table: String, _ key: String, _ args: CVarArg...) -> String {
+    if args.isEmpty {
+      return LocalizationManager.shared.localized(key)
+    } else {
+      let format = LocalizationManager.shared.localized(key)
+      return String(format: format, locale: Locale(identifier: LocalizationManager.shared.currentLanguage.rawValue), arguments: args)
+    }
+  }
+}
+

@@ -4,6 +4,10 @@ let deploymentTargets: DeploymentTargets = .iOS("15.0")
 
 let project = Project(
     name: "MyTuistProject",
+    options: .options(
+        defaultKnownRegions: ["Base", "en", "id"],
+        developmentRegion: "id"
+    ),
     targets: [
         // MARK: - App Target (Composition Root)
         .target(
@@ -44,6 +48,7 @@ let project = Project(
                 .target(name: "CoreNavigation"),
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNetwork"),
+                .target(name: "CoreLocalization"),
             ]
         ),
 
@@ -65,6 +70,36 @@ let project = Project(
 
         // MARK: - Core Modules
         .target(
+            name: "CoreLocalization",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.CoreLocalization",
+            deploymentTargets: deploymentTargets,
+            sources: [
+                "Core/Localization/Sources/**"
+            ],
+            resources: [
+                "Core/Localization/Resources/**"
+            ],
+            dependencies: [
+                .external(name: "FactoryKit")
+            ]
+        ),
+        .target(
+            name: "CoreLocalizationTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.CoreLocalizationTests",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .default,
+            sources: [
+                "Core/Localization/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "CoreLocalization")
+            ]
+        ),
+        .target(
             name: "CoreNetwork",
             destinations: .iOS,
             product: .framework,
@@ -74,7 +109,8 @@ let project = Project(
                 "Core/Network/Sources/**"
             ],
             dependencies: [
-                .external(name: "FactoryKit")
+                .external(name: "FactoryKit"),
+                .target(name: "CoreLocalization"),
             ]
         ),
         .target(
@@ -100,7 +136,9 @@ let project = Project(
             sources: [
                 "Core/DesignSystem/Sources/**"
             ],
-            dependencies: []
+            dependencies: [
+                .target(name: "CoreLocalization")
+            ]
         ),
         .target(
             name: "CoreNavigation",
@@ -210,6 +248,7 @@ let project = Project(
                 .target(name: "DomainProduct"),
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
+                .target(name: "CoreLocalization"),
             ]
         ),
         .target(
@@ -244,6 +283,7 @@ let project = Project(
                 .target(name: "DomainProduct"),
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
+                .target(name: "CoreLocalization"),
             ]
         ),
         .target(
@@ -277,6 +317,7 @@ let project = Project(
                 .external(name: "FactoryKit"),
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
+                .target(name: "CoreLocalization"),
             ]
         ),
         .target(
@@ -310,6 +351,7 @@ let project = Project(
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
                 .target(name: "DomainProduct"),
+                .target(name: "CoreLocalization"),
             ]
         ),
         .target(
@@ -344,6 +386,7 @@ let project = Project(
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
                 .target(name: "DomainProduct"),
+                .target(name: "CoreLocalization"),
             ]
         ),
         .target(

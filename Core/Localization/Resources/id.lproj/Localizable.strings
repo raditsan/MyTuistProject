@@ -1,0 +1,66 @@
+/* 
+  Localizable.strings (Indonesian)
+  MyTuistProject
+*/
+
+/* MARK: - Common */
+"common.app_name" = "MyTuistProject";
+"common.loading" = "Memuat data...";
+"common.error.title" = "Terjadi Kesalahan";
+"common.retry" = "Coba Lagi";
+"common.back" = "Kembali";
+"common.cancel" = "Batal";
+"common.all" = "Semua";
+"common.search" = "Cari...";
+"common.close" = "Tutup";
+
+/* MARK: - Language */
+"language.title" = "Pilih Bahasa";
+"language.indonesian" = "Bahasa Indonesia";
+"language.english" = "English";
+"language.current" = "Bahasa";
+
+/* MARK: - Splash */
+"splash.subtitle" = "Clean Architecture & Modular Engine";
+
+/* MARK: - Network Errors */
+"error.invalid_url" = "URL yang diminta tidak valid.";
+"error.invalid_response" = "Respon server tidak valid (Status code: %d).";
+"error.decoding" = "Gagal memproses data dari server: %@";
+"error.server" = "Terjadi kesalahan pada server: %@";
+"error.no_data" = "Data tidak ditemukan.";
+"error.unknown" = "Terjadi kesalahan tidak terduga: %@";
+
+/* MARK: - Product Catalog */
+"product.catalog.title" = "Katalog Produk";
+"product.catalog.search_prompt" = "Cari produk...";
+"product.catalog.favorite_menu" = "Menu Favorit";
+"product.catalog.loading" = "Mengambil daftar produk...";
+"product.catalog.empty_title" = "Tidak ada produk yang ditemukan";
+"product.catalog.empty_subtitle" = "Coba gunakan kata kunci pencarian atau kategori lain.";
+"product.catalog.error_title" = "Gagal Memuat Produk";
+
+/* MARK: - Product Detail */
+"product.detail.title" = "Detail Produk";
+"product.detail.loading" = "Memuat detail produk...";
+"product.detail.not_found_title" = "Tidak Ditemukan";
+"product.detail.not_found_message" = "Detail produk tidak ditemukan.";
+"product.detail.error_title" = "Gagal Memuat Detail";
+"product.detail.reviews_count" = "(%d ulasan)";
+"product.detail.section_description" = "Deskripsi";
+
+/* MARK: - Favorites */
+"favorites.title" = "Favorit Saya";
+"favorites.empty_title" = "Belum Ada Favorit";
+"favorites.empty_subtitle" = "Produk yang Anda sukai akan muncul di sini.";
+
+/* MARK: - Deeplink Loader */
+"deeplink.loading.generic" = "Memuat data...";
+"deeplink.loading.process" = "Memproses link...";
+"deeplink.loading.product" = "Memuat detail produk #%d...";
+"deeplink.error.title" = "Gagal Memuat Halaman";
+"deeplink.button.back" = "Kembali";
+"deeplink.button.retry" = "Coba Lagi";
+
+"profile.title" = "Profil Saya";
+"profile.logout" = "Keluar Akun";

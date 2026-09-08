@@ -1,4 +1,5 @@
 import Foundation
+import CoreLocalization
 
 public enum NetworkError: LocalizedError, Equatable, Sendable {
     case invalidURL
@@ -11,17 +12,17 @@ public enum NetworkError: LocalizedError, Equatable, Sendable {
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "URL yang diminta tidak valid."
+            return L10n.Error.invalidUrl
         case .invalidResponse(let statusCode):
-            return "Respon server tidak valid (Status code: \(statusCode))."
+            return L10n.Error.invalidResponse(statusCode)
         case .decodingError(let message):
-            return "Gagal memproses data dari server: \(message)"
+            return L10n.Error.decoding(message)
         case .serverError(let message):
-            return "Terjadi kesalahan pada server: \(message)"
+            return L10n.Error.server(message)
         case .noData:
-            return "Data tidak ditemukan."
+            return L10n.Error.noData
         case .unknown(let message):
-            return "Terjadi kesalahan tidak terduga: \(message)"
+            return L10n.Error.unknown(message)
         }
     }
 }
