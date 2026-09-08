@@ -428,25 +428,40 @@ let errorDesc = L10n.Error.invalidResponse(404)
 ```swift
 import CoreLocalization
 
+// Via FactoryKit Dependency Injection:
+@Injected(\.localizationManager) var localizationManager
+
 // Ganti ke Bahasa Inggris
-LocalizationManager.shared.setLanguage(.english)
+localizationManager.setLanguage(.english)
 
 // Ganti ke Bahasa Indonesia
-LocalizationManager.shared.setLanguage(.indonesian)
+localizationManager.setLanguage(.indonesian)
 ```
 
-#### 3. Membuat SwiftUI View Otomatis Re-render saat Bahasa Berubah:
+#### 3. Otomatis Re-render melalui `AppRouter.addEnvironment`:
+Seluruh tampilan yang dibuka melalui `AppRouter` (`navigate`, `setRootView`, `presentSheet`, `deeplinkLoader`) telah dibungkus oleh modifier:
 ```swift
-import SwiftUI
-import CoreLocalization
+private struct LocalizationObserverModifier: ViewModifier {
+    @InjectedObject(\.localizationManager) private var localizationManager: LocalizationManager
 
-struct ExampleView: View {
-    @ObservedObject private var localizationManager = LocalizationManager.shared
+    func body(content: Content) -> some View {
+        content
+            .environmentObject(localizationManager)
+            .environment(\.locale, Locale(identifier: localizationManager.currentLanguage.rawValue))
+            .id(localizationManager.currentLanguage)
+    }
+}
+```
+**Hasilnya:** View individual (seperti `FavoritesView`, `ProductDetailView`, dll.) **tidak perlu lagi menulis boilerplate `@ObservedObject`**. Seluruh hierarki UI otomatis di-render ulang ke bahasa baru saat `setLanguage(...)` dipanggil!
+
+Jika sebuah View memerlukan kontrol perubahan bahasa (seperti menu pemilihan bahasa di `ProductListView`), cukup gunakan `@InjectedObject`:
+```swift
+struct LanguagePickerView: View {
+    @InjectedObject(\.localizationManager) private var localizationManager: LocalizationManager
 
     var body: some View {
-        VStack {
-            Text(L10n.Product.Catalog.title)
-            Text(L10n.Common.loading)
+        Button("Switch to English") {
+            localizationManager.setLanguage(.english)
         }
     }
 }

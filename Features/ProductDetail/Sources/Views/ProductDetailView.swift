@@ -9,7 +9,6 @@ import FactoryKit
 public struct ProductDetailView: View {
     @Injected(\.router) private var router
     @StateObject private var viewModel: ProductDetailViewModel
-    @ObservedObject private var localizationManager = LocalizationManager.shared
 
     @MainActor
     public init(productId: Int) {

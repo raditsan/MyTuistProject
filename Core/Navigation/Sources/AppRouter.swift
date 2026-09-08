@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 import Combine
+import FactoryKit
+import CoreLocalization
 
 // MARK: - AppRouter
 
@@ -219,8 +221,20 @@ public final class AppRouter: ObservableObject {
 
     public func addEnvironment<V: View>(to content: V) -> some View {
         content
+            .modifier(LocalizationObserverModifier())
             .environmentObject(self)
             .environmentObject(alertCoordinator)
+    }
+}
+
+// MARK: - Localization Observer
+private struct LocalizationObserverModifier: ViewModifier {
+    @InjectedObject(\.localizationManager) private var localizationManager: LocalizationManager
+
+    func body(content: Content) -> some View {
+        content
+            .environmentObject(localizationManager)
+            .environment(\.locale, Locale(identifier: localizationManager.currentLanguage.rawValue))
     }
 }
 

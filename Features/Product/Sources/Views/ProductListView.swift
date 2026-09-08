@@ -9,7 +9,7 @@ import FactoryKit
 public struct ProductListView: View {
     @Injected(\.router) private var router
     @StateObject private var viewModel: ProductListViewModel
-    @ObservedObject private var localizationManager = LocalizationManager.shared
+    @InjectedObject(\.localizationManager) private var localizationManager: LocalizationManager
 
     private let columns = [
         GridItem(.flexible(), spacing: DesignTokens.Spacing.md),

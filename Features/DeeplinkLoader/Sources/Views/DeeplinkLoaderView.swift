@@ -8,7 +8,6 @@ import FactoryKit
 public struct DeeplinkLoaderView: View {
     @Injected(\.router) private var router: AppRouter
     @StateObject private var viewModel: DeeplinkLoaderViewModel
-    @ObservedObject private var localizationManager = LocalizationManager.shared
 
     public init(entryPoint: DeeplinkEntryPoint = .general) {
         _viewModel = StateObject(wrappedValue: DeeplinkLoaderViewModel(entryPoint: entryPoint))
