@@ -192,6 +192,20 @@ let project = Project(
             ]
         ),
         .target(
+            name: "CoreDesignSystemTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.CoreDesignSystemTests",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .default,
+            sources: [
+                "Core/DesignSystem/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "CoreDesignSystem")
+            ]
+        ),
+        .target(
             name: "CoreNavigation",
             destinations: .iOS,
             product: .framework,
