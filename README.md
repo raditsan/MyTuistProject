@@ -14,9 +14,12 @@ Aplikasi iOS modern berbasis **SwiftUI** dan **Tuist** dengan penerapan **Modula
    - [A. Navigasi Antar Halaman (AppRouter)](#a-navigasi-antar-halaman-approuter)
    - [B. Menampilkan Sheet & Bottom Sheet](#b-menampilkan-sheet--bottom-sheet)
    - [C. Menampilkan Alert & Toast](#c-menampilkan-alert--toast)
-   - [D. Dependency Injection (FactoryKit)](#d-dependency-injection-factorykit)
-   - [E. Desain & Design Tokens](#e-desain--design-tokens)
-   - [F. Lokalisasi & Multi-Language (CoreLocalization)](#f-lokalisasi--multi-language-corelocalization)
+   - [D. Manajemen Izin Perangkat (CorePermission)](#d-manajemen-izin-perangkat-corepermission)
+   - [E. Dependency Injection (FactoryKit)](#e-dependency-injection-factorykit)
+   - [F. Desain & Design Tokens](#f-desain--design-tokens)
+   - [G. Lokalisasi & Multi-Language (CoreLocalization)](#g-lokalisasi--multi-language-corelocalization)
+   - [H. Multi-Environment (Dev, UAT, Prod)](#h-multi-environment-dev-uat-prod)
+   - [I. Logging Analytics Multi-Provider (CoreAnalytics)](#i-logging-analytics-multi-provider-coreanalytics)
 7. [Alur Deep Link & Asynchronous Preload](#-alur-deep-link--asynchronous-preload)
 8. [Panduan Menambah Komponen Baru (Step-by-Step)](#-panduan-menambah-komponen-baru-step-by-step)
    - [1. Menambah Fitur Baru (Feature Module)](#1-menambah-fitur-baru-feature-module)
@@ -280,6 +283,7 @@ Semua inisialisasi kongkret (Factory bindings dan View resolution) dilakukan di 
 | **`CoreNetwork`** | Core | HTTP Client berbasis `URLSession`, abstraksi `Endpoint`, deserializer JSON, error handling. |
 | **`CoreLocalization`** | Core | Manajemen multi-bahasa (ID & EN), `LocalizationManager`, in-app language switching, strongly-typed `L10n`, dan resource `.strings`. |
 | **`CorePermission`** | Core | Manajemen izin perangkat (Kamera, Lokasi, Notifikasi) dengan batch check & request via async/await dan FactoryKit. |
+| **`CoreAnalytics`** | Core | Sistem analytics multi-provider (*Composite Pattern*) untuk logging event, screen view, user ID, dan user property dengan default `ConsoleAnalyticsProvider`. |
 
 ---
 
@@ -534,6 +538,124 @@ xcodebuild build -workspace MyTuistProject.xcworkspace -scheme MyTuistProject-UA
 # Production
 xcodebuild build -workspace MyTuistProject.xcworkspace -scheme MyTuistProject-Prod -destination "platform=iOS Simulator,name=iPhone 17"
 ```
+
+---
+
+### I. Logging Analytics Multi-Provider (`CoreAnalytics`)
+
+Modul `CoreAnalytics` mengadopsi pola **Composite Pattern**, di mana sebuah panggilan logging dapat didistribusikan ke berbagai analytics provider secara serentak. Secara bawaan, provider yang aktif adalah **`ConsoleAnalyticsProvider`** (mencetak output terstruktur ke console).
+
+#### 1. Cara Penggunaan di ViewModel (Rekomendasi):
+```swift
+import Foundation
+import CoreAnalytics
+import FactoryKit
+
+@MainActor
+public final class ProductDetailViewModel: ObservableObject {
+    // 1. Injeksi AnalyticsManager via FactoryKit
+    @Injected(\.analytics) private var analytics
+
+    // 2. Logging saat layar dibuka
+    public func onViewAppear() {
+        analytics.logScreenView(screenName: "ProductDetailView")
+    }
+
+    // 3. Logging interaksi pengguna dengan parameter
+    public func onAddToCartButtonTapped(productId: String, productName: String, price: Double) {
+        analytics.logEvent("add_to_cart", parameters: [
+            "product_id": productId,
+            "product_name": productName,
+            "price": price,
+            "currency": "IDR"
+        ])
+    }
+
+    // 4. Logging event sederhana tanpa parameter
+    public func onShareButtonTapped() {
+        analytics.logEvent("share_button_clicked")
+    }
+}
+```
+
+#### 2. Cara Penggunaan di SwiftUI View:
+```swift
+import SwiftUI
+import CoreAnalytics
+import FactoryKit
+
+struct ProductCatalogView: View {
+    @Injected(\.analytics) private var analytics
+
+    var body: some View {
+        Button("Beli Sekarang") {
+            analytics.logEvent("checkout_click", parameters: [
+                "source": "banner_promo"
+            ])
+        }
+        .onAppear {
+            analytics.logScreenView(screenName: "ProductCatalog")
+        }
+    }
+}
+```
+
+#### 3. Manajemen User Identity & Logout:
+```swift
+import CoreAnalytics
+import FactoryKit
+
+final class AuthService {
+    @Injected(\.analytics) private var analytics
+
+    func didFinishLogin(userId: String) {
+        // Ikat identitas user ke seluruh event yang akan datang
+        analytics.setUserId(userId)
+
+        // Set atribut profil user (User Properties)
+        analytics.setUserProperty(name: "user_tier", value: "gold")
+        analytics.setUserProperty(name: "gender", value: "female")
+    }
+
+    func didLogout() {
+        // Bersihkan session dan user ID saat logout
+        analytics.reset()
+    }
+}
+```
+
+#### 4. Contoh Log di Xcode Console:
+```text
+[Analytics - Console] 📊 Event: 'screen_view', Parameters: ["screen_name": "ProductDetailView"]
+[Analytics - Console] 📊 Event: 'add_to_cart', Parameters: ["currency": "IDR", "price": 45000.0, "product_id": "P-101", "product_name": "Sepatu Lari"]
+[Analytics - Console] 👤 Set User ID: 'USR-8821'
+[Analytics - Console] 🏷️ Set User Property: 'user_tier' = 'gold'
+[Analytics - Console] 🔄 Reset Session
+```
+
+#### 5. Menambahkan Provider Baru di Masa Depan (Firebase, MoEngage, Dynatrace):
+Anda **tidak perlu merombak kode di View/ViewModel**. Cukup:
+1. Buat class baru yang mengadopsi `AnalyticsProviderProtocol`:
+   ```swift
+   import FirebaseAnalytics
+
+   public final class FirebaseAnalyticsProvider: AnalyticsProviderProtocol {
+       public let name = "Firebase"
+       public var isEnabled = true
+
+       public func logEvent(_ event: AnalyticsEvent) {
+           Analytics.logEvent(event.name, parameters: event.parameters)
+       }
+       // implementasi initialize, setUserId, setUserProperty, reset...
+   }
+   ```
+2. Daftarkan di `Container+Analytics.swift`:
+   ```swift
+   AnalyticsManager(providers: [
+       ConsoleAnalyticsProvider(),
+       FirebaseAnalyticsProvider()
+   ])
+   ```
 
 ---
 

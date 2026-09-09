@@ -95,6 +95,7 @@ let project = Project(
                 .target(name: "CoreLocalization"),
                 .target(name: "FeatureCart"),
                 .target(name: "CorePermission"),
+                .target(name: "CoreAnalytics"),
             ]
         ),
 
@@ -243,6 +244,36 @@ let project = Project(
             ],
             dependencies: [
                 .target(name: "CorePermission"),
+                .external(name: "FactoryKit")
+            ]
+        ),
+
+        // MARK: - Core Analytics
+        .target(
+            name: "CoreAnalytics",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.CoreAnalytics",
+            deploymentTargets: deploymentTargets,
+            sources: [
+                "Core/Analytics/Sources/**"
+            ],
+            dependencies: [
+                .external(name: "FactoryKit")
+            ]
+        ),
+        .target(
+            name: "CoreAnalyticsTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.CoreAnalyticsTests",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .default,
+            sources: [
+                "Core/Analytics/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "CoreAnalytics"),
                 .external(name: "FactoryKit")
             ]
         ),
