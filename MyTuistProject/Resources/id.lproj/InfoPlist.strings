@@ -1,0 +1,3 @@
+/* InfoPlist.strings (Indonesian) */
+"NSCameraUsageDescription" = "Aplikasi membutuhkan izin kamera untuk mengambil foto atau scan.";
+"NSLocationWhenInUseUsageDescription" = "Aplikasi membutuhkan izin lokasi untuk menampilkan layanan terdekat.";

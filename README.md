@@ -279,6 +279,7 @@ Semua inisialisasi kongkret (Factory bindings dan View resolution) dilakukan di 
 | **`CoreDesignSystem`** | Core | Design tokens (`DesignTokens.Colors`, `Spacing`, `CornerRadius`, `Typography`) dan reusable UI (`LoadingView`, `ErrorView`, `ProductCardView`). |
 | **`CoreNetwork`** | Core | HTTP Client berbasis `URLSession`, abstraksi `Endpoint`, deserializer JSON, error handling. |
 | **`CoreLocalization`** | Core | Manajemen multi-bahasa (ID & EN), `LocalizationManager`, in-app language switching, strongly-typed `L10n`, dan resource `.strings`. |
+| **`CorePermission`** | Core | Manajemen izin perangkat (Kamera, Lokasi, Notifikasi) dengan batch check & request via async/await dan FactoryKit. |
 
 ---
 
@@ -355,7 +356,38 @@ alertCoordinator.showToast("Berhasil ditambahkan ke favorit!", type: .success)
 
 ---
 
-### D. Dependency Injection (FactoryKit)
+### D. Manajemen Izin Perangkat (`CorePermission`)
+
+Gunakan `permission` via FactoryKit untuk memeriksa atau meminta izin sistem secara async (single maupun batch):
+
+```swift
+import CorePermission
+import FactoryKit
+
+struct SampleView: View {
+    @Injected(\.permission) private var permission
+
+    func checkPermissions() async {
+        // Batch check
+        let result = await permission.check([.camera, .location, .notification])
+        if result.allGranted {
+            print("Semua izin diberikan!")
+        }
+    }
+
+    func requestPermissions() async {
+        // Batch request
+        let result = await permission.request([.camera, .location, .notification])
+        if result.isGranted(.camera) {
+            print("Kamera diizinkan")
+        }
+    }
+}
+```
+
+---
+
+### E. Dependency Injection (FactoryKit)
 
 #### 1. Mendaftarkan Dependency di Modul:
 ```swift

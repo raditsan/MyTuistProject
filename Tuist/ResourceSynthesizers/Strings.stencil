@@ -5,6 +5,9 @@
 // Generated using Tuist with Custom Strings.stencil (Computed Properties & In-App Switching)
 
 import Foundation
+#if canImport(CoreLocalization)
+import CoreLocalization
+#endif
 
 // MARK: - Strings
 

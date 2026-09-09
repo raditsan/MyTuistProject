@@ -28,6 +28,8 @@ let project = Project(
                             "CFBundleURLSchemes": ["mytuist"],
                         ],
                     ],
+                    "NSCameraUsageDescription": "Aplikasi membutuhkan izin kamera untuk mengambil foto atau scan.",
+                    "NSLocationWhenInUseUsageDescription": "Aplikasi membutuhkan izin lokasi untuk menampilkan layanan terdekat.",
                 ]
             ),
             sources: [
@@ -50,6 +52,7 @@ let project = Project(
                 .target(name: "CoreNetwork"),
                 .target(name: "CoreLocalization"),
                 .target(name: "FeatureCart"),
+                .target(name: "CorePermission"),
             ]
         ),
 
@@ -168,6 +171,37 @@ let project = Project(
             ],
             dependencies: [
                 .target(name: "CoreNavigation")
+            ]
+        ),
+
+        // MARK: - Core Permission
+        .target(
+            name: "CorePermission",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.CorePermission",
+            deploymentTargets: deploymentTargets,
+            sources: [
+                "Core/Permission/Sources/**"
+            ],
+            dependencies: [
+                .target(name: "CoreLocalization"),
+                .external(name: "FactoryKit")
+            ]
+        ),
+        .target(
+            name: "CorePermissionTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.CorePermissionTests",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .default,
+            sources: [
+                "Core/Permission/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "CorePermission"),
+                .external(name: "FactoryKit")
             ]
         ),
 

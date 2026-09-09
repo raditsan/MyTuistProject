@@ -64,3 +64,14 @@
 
 "profile.title" = "Profil Saya";
 "profile.logout" = "Keluar Akun";
+
+/* MARK: - Permission */
+"permission.camera.title" = "Izin Kamera";
+"permission.camera.description" = "Aplikasi membutuhkan izin kamera untuk mengambil foto atau scan.";
+"permission.location.title" = "Izin Lokasi";
+"permission.location.description" = "Aplikasi membutuhkan izin lokasi untuk menampilkan layanan terdekat.";
+"permission.notification.title" = "Izin Notifikasi";
+"permission.notification.description" = "Aplikasi membutuhkan izin notifikasi untuk mengirimkan update dan promo.";
+"permission.settings.button" = "Buka Pengaturan";
+"permission.denied.message" = "Izin telah ditolak. Silakan aktifkan melalui Pengaturan iPhone Anda.";
+

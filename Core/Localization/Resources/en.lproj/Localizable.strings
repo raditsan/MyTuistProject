@@ -64,3 +64,14 @@
 
 "profile.title" = "My Profile";
 "profile.logout" = "Log Out";
+
+/* MARK: - Permission */
+"permission.camera.title" = "Camera Permission";
+"permission.camera.description" = "The app requires camera access to take photos or scan.";
+"permission.location.title" = "Location Permission";
+"permission.location.description" = "The app requires location access to show nearby services.";
+"permission.notification.title" = "Notification Permission";
+"permission.notification.description" = "The app requires notification access to send updates and offers.";
+"permission.settings.button" = "Open Settings";
+"permission.denied.message" = "Permission was denied. Please enable it in your iPhone Settings.";
+
