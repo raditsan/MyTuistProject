@@ -1,14 +1,15 @@
 import Foundation
 import CoreNetwork
 import FactoryKit
+import Moya
 
-public enum ProductEndpoint: APIEndpoint {
+public enum ProductEndpoint: TargetType {
     case getProducts
     case getProductDetail(id: Int)
     case getCategories
 
-    public var baseURL: String {
-        AppEnvironment.baseURL
+    public var baseURL: URL {
+        URL(string: AppEnvironment.baseURL) ?? URL(string: "https://fakestoreapi.com")!
     }
 
     public var path: String {
@@ -22,8 +23,16 @@ public enum ProductEndpoint: APIEndpoint {
         }
     }
 
-    public var method: HTTPMethod {
+    public var method: Moya.Method {
         .get
+    }
+
+    public var task: Task {
+        .requestPlain
+    }
+
+    public var headers: [String: String]? {
+        ["Content-Type": "application/json", "Accept": "application/json"]
     }
 }
 
@@ -43,14 +52,14 @@ public final class ProductRemoteDataSource: ProductRemoteDataSourceProtocol, @un
     }
 
     public func fetchProducts() async throws -> [ProductDTO] {
-        try await client.request(endpoint: ProductEndpoint.getProducts, type: [ProductDTO].self)
+        try await client.request(target: ProductEndpoint.getProducts, type: [ProductDTO].self)
     }
 
     public func fetchProductDetail(id: Int) async throws -> ProductDTO {
-        try await client.request(endpoint: ProductEndpoint.getProductDetail(id: id), type: ProductDTO.self)
+        try await client.request(target: ProductEndpoint.getProductDetail(id: id), type: ProductDTO.self)
     }
 
     public func fetchCategories() async throws -> [String] {
-        try await client.request(endpoint: ProductEndpoint.getCategories, type: [String].self)
+        try await client.request(target: ProductEndpoint.getCategories, type: [String].self)
     }
 }

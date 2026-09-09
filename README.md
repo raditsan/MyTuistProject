@@ -20,6 +20,7 @@ Aplikasi iOS modern berbasis **SwiftUI** dan **Tuist** dengan penerapan **Modula
    - [G. Lokalisasi & Multi-Language (CoreLocalization)](#g-lokalisasi--multi-language-corelocalization)
    - [H. Multi-Environment (Dev, UAT, Prod)](#h-multi-environment-dev-uat-prod)
    - [I. Logging Analytics Multi-Provider (CoreAnalytics)](#i-logging-analytics-multi-provider-coreanalytics)
+   - [J. Networking Berbasis Moya + Combine (CoreNetwork)](#j-networking-berbasis-moya--combine-corenetwork)
 7. [Alur Deep Link & Asynchronous Preload](#-alur-deep-link--asynchronous-preload)
 8. [Panduan Menambah Komponen Baru (Step-by-Step)](#-panduan-menambah-komponen-baru-step-by-step)
    - [1. Menambah Fitur Baru (Feature Module)](#1-menambah-fitur-baru-feature-module)
@@ -39,6 +40,7 @@ Aplikasi iOS modern berbasis **SwiftUI** dan **Tuist** dengan penerapan **Modula
 - **Build System & Project Generator**: [Tuist](https://tuist.io/)
 - **Version & Tool Manager**: [mise](https://mise.jdx.dev/)
 - **Dependency Injection**: [FactoryKit](https://github.com/hmlongco/Factory)
+- **Networking**: [Moya](https://github.com/Moya/Moya) & [CombineMoya](https://github.com/Moya/Moya) (Reactive Network Layer)
 - **Concurrency**: Swift Concurrency (`async`/`await`, `@MainActor`, `Sendable`)
 - **Reactive State**: Combine (`@Published`, `ObservableObject`)
 - **Testing**: XCTest
@@ -280,7 +282,7 @@ Semua inisialisasi kongkret (Factory bindings dan View resolution) dilakukan di 
 | **`DataProduct`** | Data | DTOs, `ProductRemoteDataSource` (DummyJSON REST API), `ProductRepositoryImpl`. |
 | **`CoreNavigation`** | Core | Mesin navigasi (`AppRouter`, `AppRoute`, `SheetConfiguration`, `AlertCoordinator`, `ToastMessage`). |
 | **`CoreDesignSystem`** | Core | Design tokens (`DesignTokens.Colors`, `Spacing`, `CornerRadius`, `Typography`) dan reusable UI (`LoadingView`, `ErrorView`, `ProductCardView`). |
-| **`CoreNetwork`** | Core | HTTP Client berbasis `URLSession`, abstraksi `Endpoint`, deserializer JSON, error handling. |
+| **`CoreNetwork`** | Core | Networking layer berbasis **Moya + Combine** (`CombineMoya`), abstraksi `TargetType` (`APIEndpoint`), reactive `AnyPublisher`, async/await bridge, dan deserializer JSON. |
 | **`CoreLocalization`** | Core | Manajemen multi-bahasa (ID & EN), `LocalizationManager`, in-app language switching, strongly-typed `L10n`, dan resource `.strings`. |
 | **`CorePermission`** | Core | Manajemen izin perangkat (Kamera, Lokasi, Notifikasi) dengan batch check & request via async/await dan FactoryKit. |
 | **`CoreAnalytics`** | Core | Sistem analytics multi-provider (*Composite Pattern*) untuk logging event, screen view, user ID, dan user property dengan default `ConsoleAnalyticsProvider`. |
@@ -714,6 +716,134 @@ Anda **tidak perlu merombak kode di View/ViewModel**. Cukup:
        FirebaseAnalyticsProvider()
    ])
    ```
+
+---
+
+### J. Networking Berbasis Moya + Combine (`CoreNetwork`)
+
+Modul `CoreNetwork` menggunakan arsitektur modular berbasis **Moya** native `PluginType` yang dikombinasikan dengan framework reaktif **Combine** (`CombineMoya`), serta menyediakan jembatan *backward-compatible* untuk Swift Concurrency (`async`/`await`).
+
+```
+Core/Network/Sources/
+├── Client/
+│   ├── NetworkClient.swift          # MoyaNetworkClient + Protocol + Shared Session
+│   ├── Publisher+Retry.swift        # Smart retry dengan backoff delay
+│   └── Container+Network.swift      # Factory DI wiring (networkPlugins, networkClient)
+├── Configuration/
+│   ├── AppEnvironment.swift         # Dev/UAT/Prod detection
+│   └── NetworkConfiguration.swift   # Timeout, RetryPolicy, LogLevel
+├── Models/
+│   ├── APIEndpoint.swift            # TargetType typealias
+│   ├── EmptyResponse.swift          # Model 204 No Content / Empty body
+│   ├── HTTPMethod.swift             # Moya.Method typealias
+│   └── NetworkError.swift           # Mapped errors + Backend error body parsing (apiError)
+└── Plugins/
+    ├── HeaderPlugin.swift           # Injeksi metadata aplikasi (X-Platform, X-App-Version, dll.)
+    ├── AuthPlugin.swift             # Injeksi Bearer token via TokenProvider
+    ├── LoggingPlugin.swift          # Logging konsol berdasarkan LogLevel
+    ├── ErrorPlugin.swift            # Global error handler (misal auto-logout pada 401)
+    └── RetryPlugin.swift            # Konversi status 50x agar diulang oleh Combine
+```
+
+#### 1. Mendefinisikan Endpoint (`TargetType`):
+Setiap endpoint API diimplementasikan sebagai enum yang mengadopsi `TargetType`:
+```swift
+import Foundation
+import CoreNetwork
+import Moya
+
+public enum ProductEndpoint: TargetType {
+    case getProducts
+    case getProductDetail(id: Int)
+    case deleteProduct(id: Int)
+
+    public var baseURL: URL {
+        URL(string: AppEnvironment.baseURL)!
+    }
+
+    public var path: String {
+        switch self {
+        case .getProducts: return "/products"
+        case .getProductDetail(let id): return "/products/\(id)"
+        case .deleteProduct(let id): return "/products/\(id)"
+        }
+    }
+
+    public var method: Moya.Method {
+        switch self {
+        case .getProducts, .getProductDetail: return .get
+        case .deleteProduct: return .delete
+        }
+    }
+
+    public var task: Task {
+        .requestPlain
+    }
+
+    public var headers: [String: String]? {
+        defaultHeaders // ["Content-Type": "application/json", "Accept": "application/json"]
+    }
+}
+```
+
+#### 2. Melakukan Request Menggunakan Combine (`AnyPublisher`):
+```swift
+import Combine
+import CoreNetwork
+import FactoryKit
+
+final class ProductService {
+    @Injected(\.networkClient) private var client: NetworkClientProtocol
+    private var cancellables: Set<AnyCancellable> = []
+
+    func fetchProductsPublisher() {
+        client.request(target: ProductEndpoint.getProducts, type: [ProductDTO].self)
+            .sink(
+                receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                        print("Error: \(error.localizedDescription)")
+                    }
+                },
+                receiveValue: { products in
+                    print("Diterima: \(products.count) produk")
+                }
+            )
+            .store(in: &cancellables)
+    }
+}
+```
+
+#### 3. Melakukan Request Menggunakan `async/await`:
+`MoyaNetworkClient` secara transparan menyediakan jembatan async/await lengkap dengan cooperative Task cancellation:
+```swift
+@Injected(\.networkClient) private var client: NetworkClientProtocol
+
+// Request dengan decoding model:
+func loadProducts() async throws -> [ProductDTO] {
+    try await client.request(target: ProductEndpoint.getProducts, type: [ProductDTO].self)
+}
+
+// Request tanpa return body (Void / 204 No Content):
+func deleteProduct(id: Int) async throws {
+    try await client.request(target: ProductEndpoint.deleteProduct(id: id))
+}
+```
+
+#### 4. Menangani Pesan Error Spesifik dari Backend:
+Jika server mengembalikan HTTP 400/422 dengan pesan JSON, `NetworkError` otomatis mengekstraknya sebagai `.apiError`:
+```swift
+do {
+    let products = try await client.request(target: ProductEndpoint.getProducts, type: [ProductDTO].self)
+} catch let error as NetworkError {
+    // Menampilkan pesan langsung dari backend (misal: "Email sudah terdaftar"):
+    print(error.localizedDescription)
+
+    // Atau decode payload error terstruktur spesifik jika ada:
+    if let customError = error.parseErrorBody(type: CustomApiError.self) {
+        print("Code: \(customError.code)")
+    }
+}
+```
 
 ---
 

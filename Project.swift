@@ -157,8 +157,9 @@ let project = Project(
             ],
             dependencies: [
                 .external(name: "FactoryKit"),
+                .external(name: "Moya"),
+                .external(name: "CombineMoya"),
                 .target(name: "CoreLocalization"),
-                .target(name: "FeatureCart"),
             ]
         ),
         .target(
@@ -172,7 +173,9 @@ let project = Project(
                 "Core/Network/Tests/**"
             ],
             dependencies: [
-                .target(name: "CoreNetwork")
+                .target(name: "CoreNetwork"),
+                .external(name: "Moya"),
+                .external(name: "CombineMoya"),
             ]
         ),
         .target(

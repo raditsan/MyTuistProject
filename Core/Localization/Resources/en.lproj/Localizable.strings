@@ -30,6 +30,12 @@
 "error.server" = "Server error occurred: %@";
 "error.no_data" = "No data found.";
 "error.unknown" = "An unexpected error occurred: %@";
+"error.unauthorized" = "Authentication required. Please log in again.";
+"error.forbidden" = "You do not have permission to access this resource.";
+"error.not_found" = "The requested resource was not found.";
+"error.rate_limited" = "Too many requests. Please try again later.";
+"error.timeout" = "The request timed out. Please check your connection.";
+"error.no_internet" = "No internet connection. Please check your network settings.";
 
 /* MARK: - Product Catalog */
 "product.catalog.title" = "Product Catalog";

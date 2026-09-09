@@ -9,6 +9,9 @@ import PackageDescription
     let packageSettings = PackageSettings(
         productTypes: [
             "FactoryKit": .framework,
+            "Moya": .framework,
+            "CombineMoya": .framework,
+            "Alamofire": .framework,
         ],
         baseSettings: .settings(
             configurations: [
@@ -27,5 +30,6 @@ let package = Package(
     name: "MyTuistProject",
     dependencies: [
         .package(url: "https://github.com/hmlongco/Factory.git", from: "2.5.0"),
+        .package(url: "https://github.com/Moya/Moya.git", from: "15.0.3"),
     ]
 )

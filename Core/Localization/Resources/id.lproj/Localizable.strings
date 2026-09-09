@@ -30,6 +30,12 @@
 "error.server" = "Terjadi kesalahan pada server: %@";
 "error.no_data" = "Data tidak ditemukan.";
 "error.unknown" = "Terjadi kesalahan tidak terduga: %@";
+"error.unauthorized" = "Sesi telah berakhir. Silakan masuk kembali.";
+"error.forbidden" = "Anda tidak memiliki izin untuk mengakses sumber daya ini.";
+"error.not_found" = "Sumber daya yang diminta tidak ditemukan.";
+"error.rate_limited" = "Terlalu banyak permintaan. Silakan coba lagi nanti.";
+"error.timeout" = "Permintaan melebihi batas waktu. Periksa koneksi Anda.";
+"error.no_internet" = "Tidak ada koneksi internet. Periksa pengaturan jaringan Anda.";
 
 /* MARK: - Product Catalog */
 "product.catalog.title" = "Katalog Produk";

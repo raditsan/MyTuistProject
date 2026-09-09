@@ -1,26 +1,29 @@
 import XCTest
+import Moya
 @testable import CoreNetwork
 
-private struct DummyEndpoint: APIEndpoint {
-    var baseURL: String { "https://api.example.com" }
+private struct DummyEndpoint: TargetType {
+    var baseURL: URL { URL(string: "https://api.example.com")! }
     var path: String { "/items" }
-    var method: HTTPMethod { .post }
+    var method: Moya.Method { .post }
+    var task: Task { .requestParameters(parameters: ["page": 1], encoding: URLEncoding.queryString) }
     var headers: [String: String]? { ["Authorization": "Bearer token123"] }
-    var queryItems: [URLQueryItem]? { [URLQueryItem(name: "page", value: "1")] }
+    var sampleData: Data { Data() }
 }
 
 final class APIEndpointTests: XCTestCase {
-    func test_urlRequest_constructsValidURLRequest() {
-        // Given
+    func test_targetType_properties() {
         let endpoint = DummyEndpoint()
 
-        // When
-        let request = endpoint.urlRequest
+        XCTAssertEqual(endpoint.baseURL.absoluteString, "https://api.example.com")
+        XCTAssertEqual(endpoint.path, "/items")
+        XCTAssertEqual(endpoint.method, .post)
+        XCTAssertEqual(endpoint.headers?["Authorization"], "Bearer token123")
+        XCTAssertEqual(endpoint.sampleData, Data())
+    }
 
-        // Then
-        XCTAssertNotNil(request)
-        XCTAssertEqual(request?.httpMethod, "POST")
-        XCTAssertEqual(request?.url?.absoluteString, "https://api.example.com/items?page=1")
-        XCTAssertEqual(request?.value(forHTTPHeaderField: "Authorization"), "Bearer token123")
+    func test_defaultHeaders() {
+        let endpoint = DummyEndpoint()
+        XCTAssertEqual(endpoint.defaultHeaders["Content-Type"], "application/json")
     }
 }
