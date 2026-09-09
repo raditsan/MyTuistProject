@@ -12,4 +12,12 @@ final class PrimaryButtonTests: XCTestCase {
         component.action?()
         XCTAssertTrue(actionCalled)
     }
+
+    func test_PrimaryButton_body_renders() {
+        let component = PrimaryButton(title: "Test Button", action: {})
+        _ = component.body
+        let controller = UIHostingController(rootView: component)
+        controller.loadViewIfNeeded()
+        XCTAssertNotNil(controller.view)
+    }
 }

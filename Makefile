@@ -26,9 +26,12 @@ help:
 	@echo "      Menghapus Feature modul beserta Domain, Data, Navigasi, dan"
 	@echo "      mencabut seluruh registrasi di Project.swift & AppDIContainer"
 	@echo ""
-	@echo "  make test [feature=FeatureName]"
-	@echo "      Menjalankan unit test secara otomatis via terminal."
-	@echo "      Jika feature ditentukan, menguji Feature + Domain + Data terkait."
+	@echo "  make test [ModuleName | all]"
+	@echo "      Menjalankan unit test secara otomatis via terminal:"
+	@echo "      - make test CoreNetwork      : Menguji modul CoreNetwork"
+	@echo "      - make test CoreDesignSystem : Menguji modul CoreDesignSystem"
+	@echo "      - make test Product          : Menguji Feature + Domain + Data Product"
+	@echo "      - make test                  : Menguji SEMUA modul (Core, Domain, Data, Feature, App)"
 	@echo ""
 	@echo "  make core [name=CoreModuleName]"
 	@echo "      Membuat infrastructure/core module baru di Core/<Name>"
@@ -51,8 +54,14 @@ screen:
 delete-feature:
 	@python3 scripts/delete_feature.py name=$(name)$(NAME)
 
+# Support positional argument: make test CoreNetwork
+ifeq (test,$(firstword $(MAKECMDGOALS)))
+  TEST_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  $(eval $(TEST_ARGS):;@:)
+endif
+
 test:
-	@python3 scripts/run_tests.py feature=$(feature)$(FEATURE)
+	@python3 scripts/run_tests.py $(TEST_ARGS) $(target)$(TARGET)$(feature)$(FEATURE)$(name)$(NAME)$(module)$(MODULE)
 
 core:
 	@python3 scripts/make_core.py name=$(name)$(NAME)

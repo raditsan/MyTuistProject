@@ -8,7 +8,7 @@ import SwiftUI
 /// another screen or switching tabs), `.onLoad` executes only once for the lifecycle of the view.
 public struct ViewDidLoadModifier: ViewModifier {
     @State private var hasLoaded = false
-    private let action: () -> Void
+    public let action: () -> Void
 
     public init(action: @escaping () -> Void) {
         self.action = action

@@ -2,7 +2,7 @@ import SwiftUI
 import CoreLocalization
 
 public struct LoadingView: View {
-    private let message: String
+    public let message: String
 
     public init(message: String = L10n.Common.loading) {
         self.message = message

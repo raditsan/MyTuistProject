@@ -11,13 +11,20 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from make_feature import to_pascal_case
 
 def parse_args():
-    feature = None
+    target = None
     for arg in sys.argv[1:]:
-        if arg.startswith("feature=") or arg.startswith("FEATURE="):
-            feature = arg.split("=", 1)[1]
-        elif not arg.startswith("-") and feature is None:
-            feature = arg
-    return feature
+        for prefix in ["target=", "TARGET=", "feature=", "FEATURE=", "name=", "NAME=", "module=", "MODULE="]:
+            if arg.startswith(prefix):
+                target = arg.split("=", 1)[1].strip()
+                break
+        if target:
+            break
+        elif not arg.startswith("-") and target is None:
+            target = arg.strip()
+
+    if target and target.lower() in ["all", "semua", "true", "1"]:
+        return "all"
+    return target if target else "all"
 
 def get_best_simulator():
     try:
@@ -77,56 +84,143 @@ def get_workspace_schemes(workspace_path: Path):
                 schemes.append(line_str)
     return schemes
 
+import shutil
+
+def print_coverage_report(xcresult_path: Path, scheme: str):
+    if not xcresult_path.exists():
+        return
+    try:
+        res = subprocess.run(
+            ["xcrun", "xccov", "view", "--report", "--json", str(xcresult_path)],
+            capture_output=True,
+            text=True
+        )
+        if res.returncode != 0:
+            return
+        data = json.loads(res.stdout)
+        targets = data.get("targets", [])
+
+        # Filter relevant targets (exclude test bundles and external SPM packages)
+        excluded_prefixes = ["Moya", "Alamofire", "FactoryKit"]
+        relevant_targets = []
+        for t in targets:
+            name = t.get("name", "")
+            if name.endswith(".xctest"):
+                continue
+            if any(name.startswith(p) for p in excluded_prefixes):
+                continue
+            # Also exclude targets with 0 executable lines
+            if t.get("executableLines", 0) > 0:
+                relevant_targets.append(t)
+
+        if not relevant_targets:
+            return
+
+        print("\n" + "-" * 55)
+        print(f"📈 Laporan Code Coverage: {scheme}")
+        print("-" * 55)
+
+        for t in relevant_targets:
+            t_name = t.get("name", "")
+            cov_pct = t.get("lineCoverage", 0.0) * 100
+            cov_lines = t.get("coveredLines", 0)
+            tot_lines = t.get("executableLines", 0)
+
+            status_badge = "✅ PASSED (>80%)" if cov_pct >= 80.0 else ("⚠️ CUKUP (>50%)" if cov_pct >= 50.0 else "❌ PERLU DITINGKATKAN")
+            print(f"🎯 Target: {t_name}")
+            print(f"   Coverage : {cov_pct:.1f}% ({cov_lines}/{tot_lines} baris) [{status_badge}]")
+
+            files = t.get("files", [])
+            if files:
+                print("   Rincian File:")
+                for f in sorted(files, key=lambda x: x.get("name", "")):
+                    f_name = f.get("name", "")
+                    f_cov = f.get("lineCoverage", 0.0) * 100
+                    f_cov_lines = f.get("coveredLines", 0)
+                    f_tot_lines = f.get("executableLines", 0)
+                    f_icon = "  ✅" if f_cov >= 80.0 else ("  ⚠️" if f_cov >= 50.0 else "  ❌")
+                    print(f"   {f_icon} {f_cov:>5.1f}%  {f_name:<28} ({f_cov_lines}/{f_tot_lines} baris)")
+        print("-" * 55 + "\n")
+    except Exception:
+        pass
+
 def main():
     root_dir = Path(__file__).resolve().parent.parent
     workspace_path = root_dir / "MyTuistProject.xcworkspace"
-    raw_feature = parse_args()
+    raw_target = parse_args()
 
     dest, sim_name = get_best_simulator()
     all_schemes = get_workspace_schemes(workspace_path)
 
+    # Exclude non-testable / utility schemes
+    excluded_schemes = {
+        "Generate Project",
+        "MyTuistProject-Workspace",
+        "MyTuistProject-Dev",
+        "MyTuistProject-Prod",
+        "MyTuistProject-UAT"
+    }
+
     schemes_to_test = []
 
-    if raw_feature:
-        feature_name = to_pascal_case(raw_feature)
+    if raw_target == "all":
+        # Group and sort testable schemes in logical clean architecture order:
+        # Core -> Domain -> Data -> Feature -> App
+        core = [s for s in all_schemes if s.startswith("Core") and s not in excluded_schemes]
+        domain = [s for s in all_schemes if s.startswith("Domain") and s not in excluded_schemes]
+        data = [s for s in all_schemes if s.startswith("Data") and s not in excluded_schemes]
+        feature = [s for s in all_schemes if s.startswith("Feature") and s not in excluded_schemes]
+        app = [s for s in all_schemes if s == "MyTuistProject"]
+        schemes_to_test = sorted(core) + sorted(domain) + sorted(data) + sorted(feature) + app
+        print(f"\n🧪 Menjalankan pengujian untuk SEMUA modul ({len(schemes_to_test)} schemes)...")
+    else:
+        target_name = to_pascal_case(raw_target)
         candidates = [
-            raw_feature,
-            feature_name,
-            f"Domain{feature_name}",
-            f"Data{feature_name}",
-            f"Feature{feature_name}",
-            f"Core{feature_name}",
+            raw_target,
+            target_name,
+            f"Domain{target_name}",
+            f"Data{target_name}",
+            f"Feature{target_name}",
+            f"Core{target_name}",
         ]
-        # Preserve order while deduplicating
+        # Include schemes containing target_name (e.g. FeatureProductDetail if raw_target is Product)
+        for s in all_schemes:
+            if s not in excluded_schemes and target_name.lower() in s.lower() and s not in candidates:
+                candidates.append(s)
+
         matched = []
         for c in candidates:
-            if c in all_schemes and c not in matched:
+            if c in all_schemes and c not in matched and c not in excluded_schemes:
                 matched.append(c)
         schemes_to_test = matched
+
         if not schemes_to_test:
-            print(f"⚠️ Tidak ditemukan scheme untuk '{raw_feature}'. Scheme yang tersedia:\n{', '.join(all_schemes)}")
+            available = [s for s in all_schemes if s not in excluded_schemes]
+            print(f"⚠️ Tidak ditemukan scheme untuk '{raw_target}'. Scheme yang tersedia:\n{', '.join(available)}")
             sys.exit(1)
-        print(f"\n🧪 Menjalankan pengujian untuk '{raw_feature}'...")
-    else:
-        # Default run all feature/domain/data and app schemes
-        if "MyTuistProject" in all_schemes:
-            schemes_to_test = ["MyTuistProject"]
-        else:
-            schemes_to_test = [s for s in all_schemes if s.startswith("Feature") or s.startswith("Domain") or s.startswith("Data")]
-        print(f"\n🧪 Menjalankan pengujian untuk target aplikasi...")
+        print(f"\n🧪 Menjalankan pengujian untuk target '{raw_target}' ({len(schemes_to_test)} schemes)...")
 
     print(f"📱 Target Simulator: {sim_name} ({dest})")
     print(f"🎯 Schemes yang akan di-test: {', '.join(schemes_to_test)}\n")
+
+    temp_dir = Path("/tmp/tuist_test_results")
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
     results = []
     for scheme in schemes_to_test:
         print(f"⏳ Testing scheme '{scheme}'...")
         start_time = time.time()
+        result_bundle = temp_dir / f"{scheme}.xcresult"
+        if result_bundle.exists():
+            shutil.rmtree(result_bundle, ignore_errors=True)
+
         cmd = [
             "xcodebuild", "test",
             "-workspace", str(workspace_path),
             "-scheme", scheme,
-            "-destination", dest
+            "-destination", dest,
+            "-enableCodeCoverage", "YES",
+            "-resultBundlePath", str(result_bundle)
         ]
         proc = subprocess.run(cmd, cwd=root_dir, capture_output=True, text=True)
         duration = time.time() - start_time
@@ -141,17 +235,24 @@ def main():
                 print(f"     {line}")
             results.append((scheme, False, duration))
 
+        # Print code coverage report
+        print_coverage_report(result_bundle, scheme)
+
+        # Cleanup result bundle
+        if result_bundle.exists():
+            shutil.rmtree(result_bundle, ignore_errors=True)
+
     # Summary
-    print("\n" + "=" * 50)
-    print("📊 Hasil Pengujian Unit Test")
-    print("=" * 50)
+    print("=" * 55)
+    print("📊 Ringkasan Hasil Pengujian Unit Test")
+    print("=" * 55)
     all_passed = True
     for scheme, passed, duration in results:
         status_icon = "✅ PASSED" if passed else "❌ FAILED"
         if not passed:
             all_passed = False
         print(f"  {status_icon:<10} {scheme:<25} ({duration:.1f}s)")
-    print("=" * 50)
+    print("=" * 55)
 
     if all_passed:
         print("🎉 Semua pengujian BERHASIL lulus!\n")

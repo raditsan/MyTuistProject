@@ -2,9 +2,9 @@ import SwiftUI
 import CoreLocalization
 
 public struct ErrorView: View {
-    private let title: String
-    private let message: String
-    private let retryAction: (() -> Void)?
+    public let title: String
+    public let message: String
+    public let retryAction: (() -> Void)?
 
     public init(
         title: String = L10n.Common.Error.title,
