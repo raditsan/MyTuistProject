@@ -69,3 +69,5 @@ Derived/
 ### Tuist managed dependencies ###
 Tuist/.build
 /.idea
+*.xcresult
+__pycache__/
