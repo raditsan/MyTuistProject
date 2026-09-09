@@ -553,54 +553,106 @@ import FactoryKit
 
 @MainActor
 public final class ProductDetailViewModel: ObservableObject {
-    // 1. Injeksi AnalyticsManager via FactoryKit
     @Injected(\.analytics) private var analytics
 
-    // 2. Logging saat layar dibuka
     public func onViewAppear() {
+        // Logging screen view
         analytics.logScreenView(screenName: "ProductDetailView")
     }
 
-    // 3. Logging interaksi pengguna dengan parameter
-    public func onAddToCartButtonTapped(productId: String, productName: String, price: Double) {
-        analytics.logEvent("add_to_cart", parameters: [
-            "product_id": productId,
-            "product_name": productName,
-            "price": price,
-            "currency": "IDR"
-        ])
+    public func onAddToCartButtonTapped(product: Product) {
+        // Menggunakan standard E-Commerce taxonomy
+        analytics.logEvent(.addToCart(
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1
+        ))
     }
 
-    // 4. Logging event sederhana tanpa parameter
-    public func onShareButtonTapped() {
-        analytics.logEvent("share_button_clicked")
+    public func onCheckoutCompleted(orderId: String, total: Double) {
+        // Event pembelian standar GA4
+        analytics.logEvent(.purchase(
+            orderId: orderId,
+            value: total,
+            itemsCount: 1
+        ))
+    }
+
+    public func handleFetchFailure(error: Error) {
+        // Pelaporan error non-fatal ke analytics/APM
+        analytics.recordError(error, additionalParameters: ["screen": "ProductDetail"])
     }
 }
 ```
 
-#### 2. Cara Penggunaan di SwiftUI View:
+#### 2. Cara Deklaratif di SwiftUI View (`.trackScreen`):
+Tidak perlu menulis boilerplate `.onAppear`:
 ```swift
 import SwiftUI
 import CoreAnalytics
-import FactoryKit
 
 struct ProductCatalogView: View {
-    @Injected(\.analytics) private var analytics
-
     var body: some View {
-        Button("Beli Sekarang") {
-            analytics.logEvent("checkout_click", parameters: [
-                "source": "banner_promo"
-            ])
+        VStack {
+            Text("Katalog Produk")
         }
-        .onAppear {
-            analytics.logScreenView(screenName: "ProductCatalog")
-        }
+        // Otomatis mencatat screen view & event saat halaman tampil
+        .trackScreen("ProductCatalog", screenClass: "ProductCatalogView")
     }
 }
 ```
 
-#### 3. Manajemen User Identity & Logout:
+#### 3. E-Commerce Standard Taxonomy (GA4 / Firebase Standard):
+Tersedia helper static methods siap pakai di `AnalyticsEvent`:
+```swift
+// Lihat detail produk
+analytics.logEvent(.viewItem(id: "101", name: "Sepatu Lari", price: 750000, category: "Shoes"))
+
+// Lihat daftar kategori
+analytics.logEvent(.viewItemList(category: "Shoes", itemsCount: 20))
+
+// Keranjang belanja
+analytics.logEvent(.addToCart(id: "101", name: "Sepatu Lari", price: 750000, quantity: 1))
+analytics.logEvent(.removeFromCart(id: "101", name: "Sepatu Lari", price: 750000))
+
+// Checkout & Transaksi
+analytics.logEvent(.beginCheckout(value: 750000, itemsCount: 1))
+analytics.logEvent(.purchase(orderId: "INV-2026-001", value: 750000, itemsCount: 1))
+
+// Pencarian produk
+analytics.logEvent(.search(query: "sepatu olahraga"))
+```
+
+#### 4. Global Common Metadata (Otomatis Disematkan):
+Setiap event yang dikirim **secara otomatis disisipi metadata sistem** oleh interceptor `AnalyticsManager`:
+- `platform`: `"iOS"`
+- `os_version`: Versi iOS perangkat (misal `17.5`)
+- `device_model`: Model perangkat (misal `iPhone 16,2`)
+- `app_version` & `build_number`: Versi aplikasi dari Info.plist
+- `environment`: `Dev`, `UAT`, atau `Prod`
+
+Anda juga dapat menambahkan custom global parameters kapan saja:
+```swift
+// Menyematkan parameter global ke seluruh event berikutnya
+analytics.setGlobalParameter(name: "user_tier", value: "platinum")
+analytics.setGlobalParameter(name: "preferred_store_id", value: "STORE-JKT-01")
+```
+
+#### 5. Pelaporan Error Non-Fatal (`recordError`):
+```swift
+do {
+    try await checkoutService.pay()
+} catch {
+    // Otomatis terdistribusi ke seluruh provider analytics / APM
+    analytics.recordError(error, additionalParameters: [
+        "step": "payment_gateway",
+        "cart_total": 500000
+    ])
+}
+```
+
+#### 6. Manajemen User Identity & Logout:
 ```swift
 import CoreAnalytics
 import FactoryKit
@@ -624,16 +676,17 @@ final class AuthService {
 }
 ```
 
-#### 4. Contoh Log di Xcode Console:
+#### 7. Contoh Log di Xcode Console:
 ```text
-[Analytics - Console] 📊 Event: 'screen_view', Parameters: ["screen_name": "ProductDetailView"]
-[Analytics - Console] 📊 Event: 'add_to_cart', Parameters: ["currency": "IDR", "price": 45000.0, "product_id": "P-101", "product_name": "Sepatu Lari"]
+[Analytics - Console] 📊 Event: 'screen_view', Parameters: ["screen_name": "ProductCatalog", "platform": "iOS", "os_version": "26.2", "app_version": "1.0.0", "environment": "Dev"]
+[Analytics - Console] 📊 Event: 'add_to_cart', Parameters: ["currency": "IDR", "item_id": "101", "item_name": "Sepatu Lari", "price": 750000.0, "quantity": 1, "platform": "iOS"]
+[Analytics - Console] ❌ Error: 'Payment failed: Insufficient funds', Parameters: ["step": "payment_gateway", "platform": "iOS"]
 [Analytics - Console] 👤 Set User ID: 'USR-8821'
 [Analytics - Console] 🏷️ Set User Property: 'user_tier' = 'gold'
 [Analytics - Console] 🔄 Reset Session
 ```
 
-#### 5. Menambahkan Provider Baru di Masa Depan (Firebase, MoEngage, Dynatrace):
+#### 8. Menambahkan Provider Baru di Masa Depan (Firebase, MoEngage, Dynatrace):
 Anda **tidak perlu merombak kode di View/ViewModel**. Cukup:
 1. Buat class baru yang mengadopsi `AnalyticsProviderProtocol`:
    ```swift
@@ -645,6 +698,11 @@ Anda **tidak perlu merombak kode di View/ViewModel**. Cukup:
 
        public func logEvent(_ event: AnalyticsEvent) {
            Analytics.logEvent(event.name, parameters: event.parameters)
+       }
+
+       public func recordError(_ error: Error, additionalParameters: [String: Any]?) {
+           // Contoh integrasi Crashlytics:
+           // Crashlytics.crashlytics().record(error: error, userInfo: additionalParameters)
        }
        // implementasi initialize, setUserId, setUserProperty, reset...
    }

@@ -32,6 +32,15 @@ public final class ConsoleAnalyticsProvider: AnalyticsProviderProtocol, @uncheck
         print("[Analytics - Console] 🏷️ Set User Property: '\(name)' = '\(value ?? "nil")'")
     }
 
+    public func recordError(_ error: Error, additionalParameters: [String: Any]? = nil) {
+        guard isEnabled else { return }
+        if let params = additionalParameters, !params.isEmpty {
+            print("[Analytics - Console] ❌ Error: '\(error.localizedDescription)', Parameters: \(params)")
+        } else {
+            print("[Analytics - Console] ❌ Error: '\(error.localizedDescription)'")
+        }
+    }
+
     public func reset() {
         guard isEnabled else { return }
         print("[Analytics - Console] 🔄 Reset Session")
