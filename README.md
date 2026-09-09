@@ -501,6 +501,42 @@ struct LanguagePickerView: View {
 
 ---
 
+### G. Multi-Environment (Dev, UAT, Prod)
+
+Aplikasi mendukung 3 environment yang terisolasi menggunakan file `.xcconfig` dan skema Tuist terpisah:
+
+| Environment | Scheme | App Name | Bundle ID | URL Scheme | Base URL |
+|---|---|---|---|---|---|
+| **Development** | `MyTuistProject-Dev` | `MyTuist (Dev)` | `dev.tuist.MyTuistProject.dev` | `mytuist-dev` | `https://fakestoreapi.com` |
+| **UAT / Staging** | `MyTuistProject-UAT` | `MyTuist (UAT)` | `dev.tuist.MyTuistProject.uat` | `mytuist-uat` | `https://fakestoreapi.com` |
+| **Production** | `MyTuistProject-Prod` | `MyTuist` | `dev.tuist.MyTuistProject` | `mytuist` | `https://fakestoreapi.com` |
+
+#### 1. Mengakses Environment di Kode Swift (`CoreNetwork`):
+```swift
+import CoreNetwork
+
+// Cek environment aktif
+let currentEnv = AppEnvironment.current // .dev, .uat, atau .prod
+let isProd = AppEnvironment.isProduction
+
+// Mengakses Base URL dinamis
+let url = AppEnvironment.baseURL
+```
+
+#### 2. Menjalankan / Build via CLI (CI/CD):
+```bash
+# Development
+xcodebuild build -workspace MyTuistProject.xcworkspace -scheme MyTuistProject-Dev -destination "platform=iOS Simulator,name=iPhone 17"
+
+# UAT / Staging
+xcodebuild build -workspace MyTuistProject.xcworkspace -scheme MyTuistProject-UAT -destination "platform=iOS Simulator,name=iPhone 17"
+
+# Production
+xcodebuild build -workspace MyTuistProject.xcworkspace -scheme MyTuistProject-Prod -destination "platform=iOS Simulator,name=iPhone 17"
+```
+
+---
+
 ## ⚡ Alur Deep Link & Asynchronous Preload
 
 Aplikasi mendukung dua jenis deeplink:

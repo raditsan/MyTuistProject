@@ -1,0 +1,8 @@
+// Configurations/Dev.xcconfig
+// Configuration settings for Development Environment
+
+APP_NAME = MyTuist (Dev)
+BUNDLE_ID_SUFFIX = .dev
+APP_URL_SCHEME = mytuist-dev
+BASE_URL = https:/$()/fakestoreapi.com
+ENVIRONMENT = dev

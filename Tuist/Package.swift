@@ -3,11 +3,23 @@ import PackageDescription
 
 #if TUIST
     import struct ProjectDescription.PackageSettings
+    import struct ProjectDescription.Settings
+    import struct ProjectDescription.Configuration
 
     let packageSettings = PackageSettings(
         productTypes: [
             "FactoryKit": .framework,
-        ]
+        ],
+        baseSettings: .settings(
+            configurations: [
+                .debug(name: "Debug-Dev"),
+                .release(name: "Release-Dev"),
+                .debug(name: "Debug-UAT"),
+                .release(name: "Release-UAT"),
+                .debug(name: "Debug-Prod"),
+                .release(name: "Release-Prod"),
+            ]
+        )
     )
 #endif
 

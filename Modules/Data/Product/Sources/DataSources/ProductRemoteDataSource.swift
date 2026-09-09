@@ -8,7 +8,7 @@ public enum ProductEndpoint: APIEndpoint {
     case getCategories
 
     public var baseURL: String {
-        "https://fakestoreapi.com"
+        AppEnvironment.baseURL
     }
 
     public var path: String {

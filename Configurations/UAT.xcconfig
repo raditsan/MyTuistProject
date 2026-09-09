@@ -1,0 +1,8 @@
+// Configurations/UAT.xcconfig
+// Configuration settings for UAT / Staging Environment
+
+APP_NAME = MyTuist (UAT)
+BUNDLE_ID_SUFFIX = .uat
+APP_URL_SCHEME = mytuist-uat
+BASE_URL = https:/$()/fakestoreapi.com
+ENVIRONMENT = uat

@@ -2,22 +2,64 @@ import ProjectDescription
 
 let deploymentTargets: DeploymentTargets = .iOS("15.0")
 
+// MARK: - Build Configurations
+let configurations: [Configuration] = [
+    .debug(name: "Debug-Dev", xcconfig: "Configurations/Dev.xcconfig"),
+    .release(name: "Release-Dev", xcconfig: "Configurations/Dev.xcconfig"),
+    .debug(name: "Debug-UAT", xcconfig: "Configurations/UAT.xcconfig"),
+    .release(name: "Release-UAT", xcconfig: "Configurations/UAT.xcconfig"),
+    .debug(name: "Debug-Prod", xcconfig: "Configurations/Prod.xcconfig"),
+    .release(name: "Release-Prod", xcconfig: "Configurations/Prod.xcconfig"),
+]
+
+let projectSettings = Settings.settings(
+    configurations: configurations,
+    defaultSettings: .recommended
+)
+
+// MARK: - Schemes Helper
+func makeAppScheme(name: String, debugConfig: ConfigurationName, releaseConfig: ConfigurationName) -> Scheme {
+    .scheme(
+        name: name,
+        shared: true,
+        buildAction: .buildAction(targets: [.target("MyTuistProject")]),
+        testAction: .targets(
+            ["MyTuistProjectTests"],
+            configuration: debugConfig
+        ),
+        runAction: .runAction(configuration: debugConfig),
+        archiveAction: .archiveAction(configuration: releaseConfig),
+        profileAction: .profileAction(configuration: releaseConfig),
+        analyzeAction: .analyzeAction(configuration: debugConfig)
+    )
+}
+
+let projectSchemes: [Scheme] = [
+    makeAppScheme(name: "MyTuistProject-Dev", debugConfig: "Debug-Dev", releaseConfig: "Release-Dev"),
+    makeAppScheme(name: "MyTuistProject-UAT", debugConfig: "Debug-UAT", releaseConfig: "Release-UAT"),
+    makeAppScheme(name: "MyTuistProject-Prod", debugConfig: "Debug-Prod", releaseConfig: "Release-Prod"),
+]
+
 let project = Project(
     name: "MyTuistProject",
     options: .options(
         defaultKnownRegions: ["Base", "en", "id"],
         developmentRegion: "id"
     ),
+    settings: projectSettings,
     targets: [
         // MARK: - App Target (Composition Root)
         .target(
             name: "MyTuistProject",
             destinations: .iOS,
             product: .app,
-            bundleId: "dev.tuist.MyTuistProject",
+            bundleId: "dev.tuist.MyTuistProject$(BUNDLE_ID_SUFFIX)",
             deploymentTargets: deploymentTargets,
             infoPlist: .extendingDefault(
                 with: [
+                    "CFBundleDisplayName": "$(APP_NAME)",
+                    "BASE_URL": "$(BASE_URL)",
+                    "ENVIRONMENT": "$(ENVIRONMENT)",
                     "UILaunchScreen": [
                         "UIColorName": "",
                         "UIImageName": "",
@@ -25,11 +67,11 @@ let project = Project(
                     "CFBundleURLTypes": [
                         [
                             "CFBundleURLName": "dev.tuist.MyTuistProject",
-                            "CFBundleURLSchemes": ["mytuist"],
+                            "CFBundleURLSchemes": ["$(APP_URL_SCHEME)"],
                         ],
                     ],
-                    "NSCameraUsageDescription": "Aplikasi membutuhkan izin kamera untuk mengambil foto atau scan.",
-                    "NSLocationWhenInUseUsageDescription": "Aplikasi membutuhkan izin lokasi untuk menampilkan layanan terdekat.",
+                    "NSCameraUsageDescription": "The app requires camera access to take photos or scan.",
+                    "NSLocationWhenInUseUsageDescription": "The app requires location access to show nearby services.",
                 ]
             ),
             sources: [
@@ -478,5 +520,6 @@ let project = Project(
             ]
         ),
 
-    ]
+    ],
+    schemes: projectSchemes
 )

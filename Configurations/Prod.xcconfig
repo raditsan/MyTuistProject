@@ -1,0 +1,8 @@
+// Configurations/Prod.xcconfig
+// Configuration settings for Production Environment
+
+APP_NAME = MyTuist
+BUNDLE_ID_SUFFIX =
+APP_URL_SCHEME = mytuist
+BASE_URL = https:/$()/fakestoreapi.com
+ENVIRONMENT = prod
