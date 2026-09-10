@@ -143,7 +143,8 @@ let project = Project(
                 "Core/Localization/Tests/**"
             ],
             dependencies: [
-                .target(name: "CoreLocalization")
+                .target(name: "CoreLocalization"),
+                .external(name: "FactoryKit")
             ]
         ),
         .target(
