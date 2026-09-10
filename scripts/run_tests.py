@@ -120,14 +120,41 @@ def print_coverage_report(xcresult_path: Path, scheme: str):
         print(f"📈 Laporan Code Coverage: {scheme}")
         print("-" * 55)
 
+        # Separate primary target from dependency targets
+        primary_targets = []
+        dependency_targets = []
+
+        norm_scheme = scheme.lower().replace("-", "").replace("_", "")
         for t in relevant_targets:
+            raw_name = t.get("name", "")
+            clean_name = raw_name.replace(".framework", "").replace(".app", "").lower().replace("-", "").replace("_", "")
+            if clean_name == norm_scheme:
+                primary_targets.append(t)
+            else:
+                dependency_targets.append(t)
+
+        # Fallback: if no exact match, try matching substring or treat first as primary
+        if not primary_targets and relevant_targets:
+            for t in relevant_targets:
+                raw_name = t.get("name", "")
+                clean_name = raw_name.replace(".framework", "").replace(".app", "").lower()
+                if norm_scheme in clean_name or clean_name in norm_scheme:
+                    primary_targets.append(t)
+                else:
+                    dependency_targets.append(t)
+            if not primary_targets:
+                primary_targets = [relevant_targets[0]]
+                dependency_targets = relevant_targets[1:]
+
+        # 1. Print Primary Target(s)
+        for t in primary_targets:
             t_name = t.get("name", "")
             cov_pct = t.get("lineCoverage", 0.0) * 100
             cov_lines = t.get("coveredLines", 0)
             tot_lines = t.get("executableLines", 0)
 
             status_badge = "✅ PASSED (>80%)" if cov_pct >= 80.0 else ("⚠️ CUKUP (>50%)" if cov_pct >= 50.0 else "❌ PERLU DITINGKATKAN")
-            print(f"🎯 Target: {t_name}")
+            print(f"🎯 Target Utama: {t_name}")
             print(f"   Coverage : {cov_pct:.1f}% ({cov_lines}/{tot_lines} baris) [{status_badge}]")
 
             files = t.get("files", [])
@@ -140,6 +167,23 @@ def print_coverage_report(xcresult_path: Path, scheme: str):
                     f_tot_lines = f.get("executableLines", 0)
                     f_icon = "  ✅" if f_cov >= 80.0 else ("  ⚠️" if f_cov >= 50.0 else "  ❌")
                     print(f"   {f_icon} {f_cov:>5.1f}%  {f_name:<28} ({f_cov_lines}/{f_tot_lines} baris)")
+
+        # 2. Print Dependency Targets (as informative secondary section)
+        if dependency_targets:
+            print("\n" + "·" * 55)
+            print("📦 Dependensi Terkait (Indirect / Terpanggil Parsial):")
+            for t in dependency_targets:
+                t_name = t.get("name", "")
+                cov_pct = t.get("lineCoverage", 0.0) * 100
+                cov_lines = t.get("coveredLines", 0)
+                tot_lines = t.get("executableLines", 0)
+                clean_target = t_name.replace(".framework", "").replace(".app", "")
+
+                print(f"   🔹 {t_name}")
+                print(f"      Coverage Terpanggil : {cov_pct:.1f}% ({cov_lines}/{tot_lines} baris)")
+                print(f"      Status             : [ℹ️ DEPENDENCY - Coverage penuh diuji di 'make test {clean_target}']")
+            print("·" * 55)
+
         print("-" * 55 + "\n")
     except Exception:
         pass
