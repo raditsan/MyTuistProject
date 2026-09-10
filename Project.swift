@@ -175,6 +175,7 @@ let project = Project(
             ],
             dependencies: [
                 .target(name: "CoreNetwork"),
+                .external(name: "FactoryKit"),
                 .external(name: "Moya"),
                 .external(name: "CombineMoya"),
             ]

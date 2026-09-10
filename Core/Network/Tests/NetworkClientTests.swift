@@ -288,4 +288,198 @@ final class NetworkClientTests: XCTestCase {
         let client = MoyaNetworkClient(configuration: config)
         XCTAssertNotNil(client)
     }
+
+    // MARK: - Smart Retry Comprehensive Tests
+
+    func test_smartRetry_withDelay_retriesSuccessfully() {
+        var attempts = 0
+        let expectation = self.expectation(description: "Retried and succeeded")
+
+        let publisher = Deferred {
+            Future<String, NetworkError> { promise in
+                attempts += 1
+                if attempts < 2 {
+                    promise(.failure(.timeout))
+                } else {
+                    promise(.success("OK"))
+                }
+            }
+        }
+
+        var receivedValue: String?
+        let cancellable = publisher
+            .smartRetry(2, delay: 0.05, when: { $0.isRetryable })
+            .sink(
+                receiveCompletion: { completion in
+                    if case .failure(let err) = completion {
+                        XCTFail("Unexpected error: \(err)")
+                    }
+                },
+                receiveValue: { value in
+                    receivedValue = value
+                    expectation.fulfill()
+                }
+            )
+
+        waitForExpectations(timeout: 2.0)
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(receivedValue, "OK")
+        _ = cancellable
+    }
+
+    func test_smartRetry_exhaustsRetries_returnsError() {
+        var attempts = 0
+        let expectation = self.expectation(description: "Exhausted retries")
+
+        let publisher = Deferred {
+            Future<String, NetworkError> { promise in
+                attempts += 1
+                promise(.failure(.timeout))
+            }
+        }
+
+        var receivedError: NetworkError?
+        let cancellable = publisher
+            .smartRetry(1, delay: 0.01, when: { $0.isRetryable })
+            .sink(
+                receiveCompletion: { completion in
+                    if case .failure(let err) = completion {
+                        receivedError = err
+                        expectation.fulfill()
+                    }
+                },
+                receiveValue: { _ in
+                    XCTFail("Should not emit value")
+                }
+            )
+
+        waitForExpectations(timeout: 2.0)
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(receivedError, .timeout)
+        _ = cancellable
+    }
+
+    func test_smartRetry_conditionFalse_failsImmediately() {
+        var attempts = 0
+        let expectation = self.expectation(description: "Fails immediately")
+
+        let publisher = Deferred {
+            Future<String, NetworkError> { promise in
+                attempts += 1
+                promise(.failure(.unauthorized))
+            }
+        }
+
+        var receivedError: NetworkError?
+        let cancellable = publisher
+            .smartRetry(3, delay: 0, when: { $0.isRetryable })
+            .sink(
+                receiveCompletion: { completion in
+                    if case .failure(let err) = completion {
+                        receivedError = err
+                        expectation.fulfill()
+                    }
+                },
+                receiveValue: { _ in
+                    XCTFail("Should not emit value")
+                }
+            )
+
+        waitForExpectations(timeout: 1.0)
+        XCTAssertEqual(attempts, 1)
+        XCTAssertEqual(receivedError, .unauthorized)
+        _ = cancellable
+    }
+
+    // MARK: - Void & EmptyResponse Requests
+
+    func test_requestVoid_async_success() async throws {
+        let provider = makeStubbedProvider(statusCode: 200, target: .success)
+        let client = MoyaNetworkClient(customProvider: provider)
+
+        try await client.request(target: TestTarget.success)
+    }
+
+    func test_requestVoid_publisher_success() {
+        let provider = makeStubbedProvider(statusCode: 200, target: .success)
+        let client = MoyaNetworkClient(customProvider: provider)
+        let expectation = self.expectation(description: "Void request succeeds")
+
+        let cancellable = client.request(target: TestTarget.success)
+            .sink(
+                receiveCompletion: { completion in
+                    if case .failure(let err) = completion {
+                        XCTFail("Unexpected failure: \(err)")
+                    }
+                    expectation.fulfill()
+                },
+                receiveValue: { _ in }
+            )
+
+        waitForExpectations(timeout: 1.0)
+        _ = cancellable
+    }
+
+    func test_requestVoid_async_failure() async {
+        let provider = makeStubbedProvider(statusCode: 404, target: .failure404)
+        let client = MoyaNetworkClient(customProvider: provider)
+
+        do {
+            try await client.request(target: TestTarget.failure404)
+            XCTFail("Expected failure")
+        } catch let error as NetworkError {
+            XCTAssertEqual(error, .notFound)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func test_requestEmptyResponse_async_success() async throws {
+        let provider = makeStubbedProvider(statusCode: 200, target: .success)
+        let client = MoyaNetworkClient(customProvider: provider)
+
+        let resp = try await client.request(target: TestTarget.success, type: EmptyResponse.self)
+        XCTAssertEqual(resp, EmptyResponse())
+    }
+
+    func test_defaultMakeProvider_initialization() {
+        let client = MoyaNetworkClient(
+            plugins: [RetryPlugin()],
+            configuration: .default
+        )
+        let publisher: AnyPublisher<EmptyResponse, NetworkError> = client.request(target: TestTarget.success, type: EmptyResponse.self)
+        XCTAssertNotNil(publisher)
+    }
+
+    // MARK: - NetworkClientProtocol Extensions
+
+    private struct MockProtocolClient: NetworkClientProtocol {
+        func request<T: Decodable, Target: TargetType>(target: Target, type: T.Type) -> AnyPublisher<T, NetworkError> {
+            if type == EmptyResponse.self, let empty = EmptyResponse() as? T {
+                return Just(empty).setFailureType(to: NetworkError.self).eraseToAnyPublisher()
+            }
+            return Fail(error: NetworkError.noData).eraseToAnyPublisher()
+        }
+
+        func request<T: Decodable, Target: TargetType>(target: Target, type: T.Type) async throws -> T {
+            if type == EmptyResponse.self, let empty = EmptyResponse() as? T {
+                return empty
+            }
+            throw NetworkError.noData
+        }
+    }
+
+    func test_networkClientProtocol_defaultVoidExtensions() async throws {
+        let mock = MockProtocolClient()
+        try await mock.request(target: TestTarget.success)
+
+        let expectation = self.expectation(description: "Protocol extension publisher")
+        let cancellable = mock.request(target: TestTarget.success)
+            .sink(
+                receiveCompletion: { _ in expectation.fulfill() },
+                receiveValue: { _ in }
+            )
+        waitForExpectations(timeout: 1.0)
+        _ = cancellable
+    }
 }

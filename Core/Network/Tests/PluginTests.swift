@@ -6,11 +6,22 @@ import Moya
 
 private enum MockTarget: TargetType {
     case getItems
+    case postItem(body: Data)
 
     var baseURL: URL { URL(string: "https://api.example.com")! }
     var path: String { "/items" }
-    var method: Moya.Method { .get }
-    var task: Task { .requestPlain }
+    var method: Moya.Method {
+        switch self {
+        case .getItems: return .get
+        case .postItem: return .post
+        }
+    }
+    var task: Task {
+        switch self {
+        case .getItems: return .requestPlain
+        case .postItem(let body): return .requestData(body)
+        }
+    }
     var headers: [String: String]? { ["Custom-Header": "TestValue"] }
     var sampleData: Data { "{\"status\":\"ok\"}".data(using: .utf8)! }
 }
@@ -100,6 +111,30 @@ final class LoggingPluginTests: XCTestCase {
         let result: Result<Response, MoyaError> = .failure(error)
 
         plugin.didReceive(result, target: MockTarget.getItems)
+    }
+
+    func test_loggingPlugin_verbose_withBodyAndTruncation() {
+        let plugin = LoggingPlugin(logLevel: .verbose, maxBodyLength: 5)
+        let provider = MoyaProvider<MockTarget>(
+            endpointClosure: { target in
+                Endpoint(
+                    url: URL(target: target).absoluteString,
+                    sampleResponseClosure: { .networkResponse(404, "Long Error Response Data".data(using: .utf8)!) },
+                    method: target.method,
+                    task: target.task,
+                    httpHeaderFields: target.headers
+                )
+            },
+            stubClosure: MoyaProvider.immediatelyStub,
+            plugins: [plugin]
+        )
+
+        let expectation = self.expectation(description: "Request completes")
+        let longBody = "Very Long Body Exceeding Max Length".data(using: .utf8)!
+        provider.request(.postItem(body: longBody)) { _ in
+            expectation.fulfill()
+        }
+        waitForExpectations(timeout: 2.0)
     }
 }
 
@@ -209,6 +244,12 @@ final class ErrorPluginTests: XCTestCase {
         let result: Result<Response, MoyaError> = .failure(error)
 
         plugin.didReceive(result, target: MockTarget.getItems)
+    }
+
+    func test_consoleErrorHandler() {
+        let handler = ConsoleErrorHandler()
+        handler.handleError(.unauthorized, for: MockTarget.getItems)
+        handler.handleError(.serverError("Something went wrong"), for: MockTarget.getItems)
     }
 }
 
