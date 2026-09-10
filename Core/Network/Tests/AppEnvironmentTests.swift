@@ -71,4 +71,18 @@ final class AppEnvironmentTests: XCTestCase {
         XCTAssertEqual(AppEnvironment.resolveAppName(infoDictionary: ["CFBundleName": "Bundle Name"]), "Bundle Name")
         XCTAssertEqual(AppEnvironment.resolveAppName(infoDictionary: nil), "MyTuist")
     }
+
+    func test_version_and_buildNumber() {
+        XCTAssertEqual(AppEnvironment.resolveAppVersion(infoDictionary: ["CFBundleShortVersionString": "2.1.0"]), "2.1.0")
+        XCTAssertEqual(AppEnvironment.resolveAppVersion(infoDictionary: ["CFBundleShortVersionString": ""]), "1.0.0")
+        XCTAssertEqual(AppEnvironment.resolveAppVersion(infoDictionary: nil), "1.0.0")
+
+        XCTAssertEqual(AppEnvironment.resolveBuildNumber(infoDictionary: ["CFBundleVersion": "42"]), "42")
+        XCTAssertEqual(AppEnvironment.resolveBuildNumber(infoDictionary: ["CFBundleVersion": ""]), "1")
+        XCTAssertEqual(AppEnvironment.resolveBuildNumber(infoDictionary: nil), "1")
+
+        XCTAssertFalse(AppEnvironment.appVersion.isEmpty)
+        XCTAssertFalse(AppEnvironment.buildNumber.isEmpty)
+        XCTAssertTrue(AppEnvironment.fullVersionString.starts(with: "v"))
+    }
 }

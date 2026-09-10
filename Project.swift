@@ -57,6 +57,8 @@ let project = Project(
             deploymentTargets: deploymentTargets,
             infoPlist: .extendingDefault(
                 with: [
+                    "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+                    "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
                     "CFBundleDisplayName": "$(APP_NAME)",
                     "BASE_URL": "$(BASE_URL)",
                     "ENVIRONMENT": "$(ENVIRONMENT)",

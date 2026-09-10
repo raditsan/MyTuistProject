@@ -71,4 +71,33 @@ public enum AppEnvironment: String, Sendable, CaseIterable {
     public static var isUAT: Bool {
         current == .uat
     }
+
+    public static func resolveAppVersion(infoDictionary: [String: Any]? = Bundle.main.infoDictionary) -> String {
+        if let version = infoDictionary?["CFBundleShortVersionString"] as? String, !version.isEmpty {
+            return version
+        }
+        return "1.0.0"
+    }
+
+    /// Marketing Version (e.g. "1.0.0")
+    public static var appVersion: String {
+        resolveAppVersion()
+    }
+
+    public static func resolveBuildNumber(infoDictionary: [String: Any]? = Bundle.main.infoDictionary) -> String {
+        if let build = infoDictionary?["CFBundleVersion"] as? String, !build.isEmpty {
+            return build
+        }
+        return "1"
+    }
+
+    /// Build Number (e.g. "1")
+    public static var buildNumber: String {
+        resolveBuildNumber()
+    }
+
+    /// Full Version String (e.g. "v1.0.0 (1)")
+    public static var fullVersionString: String {
+        "v\(appVersion) (\(buildNumber))"
+    }
 }

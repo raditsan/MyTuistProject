@@ -6,3 +6,5 @@ BUNDLE_ID_SUFFIX = .dev
 APP_URL_SCHEME = mytuist-dev
 BASE_URL = https:/$()/fakestoreapi.com
 ENVIRONMENT = dev
+MARKETING_VERSION = 1.0.0
+CURRENT_PROJECT_VERSION = 1

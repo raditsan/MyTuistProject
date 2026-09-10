@@ -6,3 +6,5 @@ BUNDLE_ID_SUFFIX = .uat
 APP_URL_SCHEME = mytuist-uat
 BASE_URL = https:/$()/fakestoreapi.com
 ENVIRONMENT = uat
+MARKETING_VERSION = 1.0.0
+CURRENT_PROJECT_VERSION = 1
