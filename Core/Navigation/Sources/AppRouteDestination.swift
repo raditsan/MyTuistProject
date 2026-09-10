@@ -53,6 +53,6 @@ public final class RouteHostingController<Content: View>: UIHostingController<Co
     }
 
     @MainActor @objc required dynamic init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        return nil
     }
 }

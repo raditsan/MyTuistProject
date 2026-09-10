@@ -111,6 +111,7 @@ public final class AppRouter: ObservableObject {
     }
     
     public func dismissDeeplinkLoader() async {
+        guard navigationController.presentedViewController != nil else { return }
         await withCheckedContinuation { continuation in
             navigationController.dismiss(animated: false) {
                 continuation.resume()
@@ -164,6 +165,7 @@ public final class AppRouter: ObservableObject {
     }
 
     public func dismissModalAsync(animated: Bool = true) async {
+        guard navigationController.presentedViewController != nil else { return }
         await withCheckedContinuation { continuation in
             navigationController.dismiss(animated: animated) {
                 continuation.resume()

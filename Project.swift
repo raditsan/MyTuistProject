@@ -231,7 +231,8 @@ let project = Project(
                 "Core/Navigation/Tests/**"
             ],
             dependencies: [
-                .target(name: "CoreNavigation")
+                .target(name: "CoreNavigation"),
+                .external(name: "FactoryKit")
             ]
         ),
 
