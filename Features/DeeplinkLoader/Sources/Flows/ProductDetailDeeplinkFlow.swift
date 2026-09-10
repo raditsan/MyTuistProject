@@ -8,7 +8,7 @@ import FactoryKit
 @MainActor
 public final class ProductDetailDeeplinkFlow: DeeplinkFlow {
     private let productId: Int
-    @Injected(\.getProductDetailUseCase) private var getProductDetailUseCase: GetProductDetailUseCaseProtocol
+    @Injected(\.getProductDetailUseCase) private var getProductDetailUseCase
     @Injected(\.router) private var router
 
     public init(productId: Int) {

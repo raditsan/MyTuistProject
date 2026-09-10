@@ -18,8 +18,8 @@ public final class ProductListViewModel: ObservableObject {
     @Published public var selectedCategory: String = "All"
     @Published public var searchQuery: String = ""
 
-    @Injected(\.getProductsUseCase) private var getProductsUseCase: GetProductsUseCaseProtocol
-    @Injected(\.productRepository) private var repository: ProductRepositoryProtocol
+    @Injected(\.getProductsUseCase) private var getProductsUseCase
+    @Injected(\.productRepository) private var repository
     private var cancellables = Set<AnyCancellable>()
 
     public init() {

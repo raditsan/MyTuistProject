@@ -5,7 +5,7 @@ import FactoryKit
 
 @MainActor
 public final class FavoritesViewModel: ObservableObject {
-    @Injected(\.router) private var router: AppRouter
+    @Injected(\.router) private var router
     @Published public var items: [String] = []
 
     public init() {}

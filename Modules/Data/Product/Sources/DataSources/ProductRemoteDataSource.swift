@@ -43,7 +43,7 @@ public protocol ProductRemoteDataSourceProtocol: Sendable {
 }
 
 public final class ProductRemoteDataSource: ProductRemoteDataSourceProtocol, @unchecked Sendable {
-    @Injected(\.networkClient) private var client: NetworkClientProtocol
+    @Injected(\.networkClient) private var client
 
     public init() {}
 

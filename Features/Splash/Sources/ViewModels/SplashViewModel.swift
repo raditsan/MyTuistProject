@@ -5,7 +5,7 @@ import FactoryKit
 
 @MainActor
 public final class SplashViewModel: ObservableObject {
-    @Injected(\.router) private var router: AppRouter
+    @Injected(\.router) private var router
     @Published public var isAnimating = false
 
     public init() {}

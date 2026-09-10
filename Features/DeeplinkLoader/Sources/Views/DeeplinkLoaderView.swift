@@ -6,7 +6,7 @@ import FactoryKit
 
 @MainActor
 public struct DeeplinkLoaderView: View {
-    @Injected(\.router) private var router: AppRouter
+    @Injected(\.router) private var router
     @StateObject private var viewModel: DeeplinkLoaderViewModel
 
     public init(entryPoint: DeeplinkEntryPoint = .general) {

@@ -15,7 +15,7 @@ public final class ProductDetailViewModel: ObservableObject {
     @Published public private(set) var state: DetailViewState<Product> = .idle
 
     public let productId: Int
-    @Injected(\.getProductDetailUseCase) private var getProductDetailUseCase: GetProductDetailUseCaseProtocol
+    @Injected(\.getProductDetailUseCase) private var getProductDetailUseCase
 
     public init(productId: Int) {
         self.productId = productId

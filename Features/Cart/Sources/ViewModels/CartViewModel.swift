@@ -5,7 +5,7 @@ import FactoryKit
 
 @MainActor
 public final class CartViewModel: ObservableObject {
-    @Injected(\.router) private var router: AppRouter
+    @Injected(\.router) private var router
     public let param: CartScreenParam?
 
     public init(param: CartScreenParam? = nil) {

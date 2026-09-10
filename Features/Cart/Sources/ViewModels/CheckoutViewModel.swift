@@ -5,7 +5,7 @@ import FactoryKit
 
 @MainActor
 public final class CheckoutViewModel: ObservableObject {
-    @Injected(\.router) private var router: AppRouter
+    @Injected(\.router) private var router
     public let param: CheckoutScreenParam?
 
     public init(param: CheckoutScreenParam? = nil) {

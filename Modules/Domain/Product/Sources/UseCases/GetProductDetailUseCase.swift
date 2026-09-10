@@ -6,7 +6,7 @@ public protocol GetProductDetailUseCaseProtocol: Sendable {
 }
 
 public final class GetProductDetailUseCase: GetProductDetailUseCaseProtocol, @unchecked Sendable {
-    @Injected(\.productRepository) private var repository: ProductRepositoryProtocol
+    @Injected(\.productRepository) private var repository
 
     public init() {}
 

@@ -3,7 +3,7 @@ import DomainProduct
 import FactoryKit
 
 public final class ProductRepository: ProductRepositoryProtocol, @unchecked Sendable {
-    @Injected(\.productRemoteDataSource) private var remoteDataSource: ProductRemoteDataSourceProtocol
+    @Injected(\.productRemoteDataSource) private var remoteDataSource
 
     public init() {}
 
