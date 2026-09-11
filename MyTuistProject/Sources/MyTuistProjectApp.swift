@@ -4,6 +4,7 @@ import FactoryKit
 
 @main
 struct MyTuistProjectApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Injected(\.router) private var router
 
     init() {

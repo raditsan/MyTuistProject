@@ -442,6 +442,7 @@ let project = Project(
                 .target(name: "CoreDesignSystem"),
                 .target(name: "CoreNavigation"),
                 .target(name: "CoreLocalization"),
+                .target(name: "CoreNotification"),
                 .target(name: "FeatureCart"),
             ]
         ),

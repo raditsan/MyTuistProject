@@ -3,11 +3,13 @@ import DomainProduct
 import CoreDesignSystem
 import CoreNavigation
 import CoreLocalization
+import CoreNotification
 import FactoryKit
 
 @MainActor
 public struct ProductListView: View {
     @Injected(\.router) private var router
+    @Injected(\.notificationService) private var notificationService
     @StateObject private var viewModel: ProductListViewModel
     @InjectedObject(\.localizationManager) private var localizationManager: LocalizationManager
 
@@ -38,6 +40,7 @@ public struct ProductListView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: DesignTokens.Spacing.sm) {
+                    notificationMenu
                     languageMenu
 
                     Button {
@@ -52,6 +55,107 @@ public struct ProductListView: View {
         }
         .task {
             await viewModel.onAppear()
+        }
+    }
+
+    // MARK: - Notification Test Menu
+    @ViewBuilder
+    private var notificationMenu: some View {
+        Menu {
+            Section("Uji Coba Notifikasi") {
+                Button {
+                    scheduleTestNotification(
+                        title: "Flash Sale Spesial! ⚡️",
+                        body: "Diskon hingga 70% untuk produk pilihan hari ini.",
+                        seconds: 5,
+                        deepLink: "mytuist://product/1"
+                    )
+                } label: {
+                    Label("Promo 5 Detik (Produk #1)", systemImage: "sparkles")
+                }
+
+                Button {
+                    scheduleTestNotification(
+                        title: "Ada Item di Keranjangmu! 🛒",
+                        body: "Selesaikan pesananmu sebelum kehabisan diskon.",
+                        seconds: 10,
+                        deepLink: "mytuist://cart"
+                    )
+                } label: {
+                    Label("Keranjang 10 Detik", systemImage: "cart.badge.plus")
+                }
+
+                Button {
+                    scheduleTestNotification(
+                        title: "Produk Favoritmu Turun Harga! ❤️",
+                        body: "Cek wishlist sekarang dan nikmati penawaran spesial.",
+                        seconds: 15,
+                        deepLink: "mytuist://favorites"
+                    )
+                } label: {
+                    Label("Favorit 15 Detik", systemImage: "heart")
+                }
+            }
+
+            Section("Manajemen") {
+                Button(role: .destructive) {
+                    Task {
+                        await notificationService.removeAllPending()
+                        router.showToast(
+                            title: "Antrean Dihapus",
+                            message: "Semua pengingat telah dibatalkan",
+                            style: .info
+                        )
+                    }
+                } label: {
+                    Label("Hapus Antrean Notifikasi", systemImage: "trash")
+                }
+            }
+        } label: {
+            Image(systemName: "bell.badge")
+                .foregroundColor(DesignTokens.Colors.primary)
+        }
+        .accessibilityLabel("Menu Notifikasi")
+    }
+
+    private func scheduleTestNotification(
+        title: String,
+        body: String,
+        seconds: TimeInterval,
+        deepLink: String?
+    ) {
+        Task {
+            do {
+                let granted = try await notificationService.requestAuthorization()
+                guard granted else {
+                    router.showToast(
+                        title: "Izin Notifikasi Ditolak",
+                        message: "Silakan izinkan notifikasi melalui Pengaturan iOS",
+                        style: .warning
+                    )
+                    return
+                }
+
+                let targetURL = deepLink.flatMap { URL(string: $0) }
+                try await notificationService.scheduleTimeInterval(
+                    title: title,
+                    body: body,
+                    timeInterval: seconds,
+                    deepLinkURL: targetURL
+                )
+
+                router.showToast(
+                    title: "Notifikasi Terjadwal! 🔔",
+                    message: "Akan muncul dalam \(Int(seconds)) detik. Ketuk banner untuk berpindah rute!",
+                    style: .success
+                )
+            } catch {
+                router.showToast(
+                    title: "Gagal Menjadwalkan",
+                    message: error.localizedDescription,
+                    style: .error
+                )
+            }
         }
     }
 
