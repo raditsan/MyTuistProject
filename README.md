@@ -21,6 +21,7 @@ Aplikasi iOS modern berbasis **SwiftUI** dan **Tuist** dengan penerapan **Modula
    - [H. Multi-Environment (Dev, UAT, Prod)](#h-multi-environment-dev-uat-prod)
    - [I. Logging Analytics Multi-Provider (CoreAnalytics)](#i-logging-analytics-multi-provider-coreanalytics)
    - [J. Networking Berbasis Moya + Combine (CoreNetwork)](#j-networking-berbasis-moya--combine-corenetwork)
+   - [K. Manajemen Penyimpanan Data (CoreStorage - Plain & Secure Storage)](#k-manajemen-penyimpanan-data-corestorage---plain--secure-storage)
 7. [Alur Deep Link & Asynchronous Preload](#-alur-deep-link--asynchronous-preload)
 8. [Panduan Menambah Komponen Baru (Step-by-Step)](#-panduan-menambah-komponen-baru-step-by-step)
    - [1. Menambah Fitur Baru (Feature Module)](#1-menambah-fitur-baru-feature-module)
@@ -178,6 +179,9 @@ graph TD
         DS[CoreDesignSystem]
         Net[CoreNetwork]
         Loc[CoreLocalization]
+        Perm[CorePermission]
+        Ana[CoreAnalytics]
+        Stor[CoreStorage]
     end
 
     %% App Dependencies
@@ -192,6 +196,9 @@ graph TD
     App --> DS
     App --> Net
     App --> Loc
+    App --> Perm
+    App --> Ana
+    App --> Stor
 
     %% Features Dependencies
     FS --> Nav
@@ -286,6 +293,7 @@ Semua inisialisasi kongkret (Factory bindings dan View resolution) dilakukan di 
 | **`CoreLocalization`** | Core | Manajemen multi-bahasa (ID & EN), `LocalizationManager`, in-app language switching, strongly-typed `L10n`, dan resource `.strings`. |
 | **`CorePermission`** | Core | Manajemen izin perangkat (Kamera, Lokasi, Notifikasi) dengan batch check & request via async/await dan FactoryKit. |
 | **`CoreAnalytics`** | Core | Sistem analytics multi-provider (*Composite Pattern*) untuk logging event, screen view, user ID, dan user property dengan default `ConsoleAnalyticsProvider`. |
+| **`CoreStorage`** | Core | Solusi penyimpanan ganda: `PlainStorageProtocol` (`UserDefaults` thread-safe) untuk preferensi & cache dengan enum `PlainStorageKey`, serta `SecureStorageProtocol` (Apple `Keychain` hardware terenkripsi) untuk kredensial sensitif dengan enum `SecureStorageKey`, dilengkapi SwiftUI `@Storage` / `@SecureStorage` property wrappers. |
 
 ---
 
@@ -847,6 +855,112 @@ do {
 
 ---
 
+### K. Manajemen Penyimpanan Data (CoreStorage - Plain & Secure Storage)
+
+Modul `CoreStorage` menyediakan solusi penyimpanan lokal ganda yang terisolasi, type-safe, dan thread-safe:
+1. **`plainStorage` (`PlainStorageProtocol`)**: Penyimpanan unencrypted berbasis `UserDefaults` untuk data umum, preferensi UI, flag state, dan cache ringan.
+2. **`secureStorage` (`SecureStorageProtocol`)**: Penyimpanan terenkripsi hardware berbasis Apple `Keychain` (`Security.framework`) untuk token autentikasi, kredensial, dan data rahasia.
+
+```
+Core/Storage/Sources/
+├── DI/
+│   └── Container+Storage.swift       # Registrasi FactoryKit: plainStorage & secureStorage
+├── Keys/
+│   └── StorageKeys.swift             # Strongly-typed enum: PlainStorageKey & SecureStorageKey
+├── PropertyWrappers/
+│   └── StorageWrappers.swift         # @Storage dan @SecureStorage untuk SwiftUI
+├── Protocols/
+│   ├── PlainStorageProtocol.swift    # Kontrak UserDefaults (Primitives + Codable)
+│   └── SecureStorageProtocol.swift   # Kontrak Keychain (String, Data, Delete, Errors)
+└── Services/
+    ├── KeychainStorage.swift         # Implementasi Keychain + In-memory unit test fallback
+    └── UserDefaultsStorage.swift     # Implementasi thread-safe UserDefaults
+```
+
+#### 1. Strongly-Typed Enum Storage Keys (`StorageKeys.swift`):
+Mencegah *magic string*, typo, dan tabrakan key antar fitur:
+
+| Tipe Enum | Contoh Case Bawaan | Rekomendasi Penggunaan |
+|---|---|---|
+| **`PlainStorageKey`** | `.isDarkMode`, `.selectedLanguage`, `.hasCompletedOnboarding`, `.pushNotificationsEnabled`, `.userProfileCache`, `.searchHistory`, `.cartItemIds`, `.lastSyncTimestamp` | Preferensi user, tema, status onboarding, cache data ringan, ID keranjang belanja lokal |
+| **`SecureStorageKey`** | `.accessToken`, `.refreshToken`, `.idToken`, `.userPin`, `.biometricKey`, `.deviceSecret` | JWT Bearer Token, refresh token OAuth, PIN aplikasi, kunci enkripsi biometrik, secret device |
+
+> **Catatan:** Tersedia overload `String` pada protocol jika membutuhkan dynamic key pada saat runtime (misalnya key berbasis ID dinamis `user_cache_\(userId)`).
+
+#### 2. Penggunaan via Dependency Injection (`FactoryKit`) di DataSource / Service:
+```swift
+import Foundation
+import CoreStorage
+import FactoryKit
+
+public final class UserSessionDataSource {
+    @Injected(\.plainStorage) private var plainStorage
+    @Injected(\.secureStorage) private var secureStorage
+
+    // 1. Simpan & Baca Token Terenkripsi di Keychain menggunakan enum key
+    public func saveAccessToken(_ token: String) throws {
+        try secureStorage.set(token, forKey: .accessToken)
+    }
+
+    public func getAccessToken() -> String? {
+        secureStorage.get(forKey: .accessToken)
+    }
+
+    public func clearSession() throws {
+        try secureStorage.delete(forKey: .accessToken)
+        try secureStorage.delete(forKey: .refreshToken)
+    }
+
+    // 2. Simpan & Baca Pengaturan / Cache di UserDefaults menggunakan enum key
+    public func setDarkMode(_ enabled: Bool) {
+        plainStorage.set(enabled, forKey: .isDarkMode)
+    }
+
+    public func isDarkModeEnabled() -> Bool {
+        plainStorage.bool(forKey: .isDarkMode)
+    }
+
+    public func saveUserProfileCache(_ profile: UserProfileDTO) {
+        plainStorage.setObject(profile, forKey: .userProfileCache)
+    }
+
+    public func getUserProfileCache() -> UserProfileDTO? {
+        plainStorage.object(forKey: .userProfileCache)
+    }
+}
+```
+
+#### 3. Penggunaan Deklaratif via Property Wrapper di SwiftUI View / ViewModel:
+Mirip `@AppStorage`, namun mendukung enum key dan enkripsi Keychain:
+```swift
+import SwiftUI
+import CoreStorage
+
+final class AppSettingsViewModel: ObservableObject {
+    // PlainStorage (UserDefaults) dengan enum key
+    @Storage(key: .isDarkMode, defaultValue: false)
+    var isDarkMode: Bool
+
+    @Storage(key: .selectedLanguage, defaultValue: "id")
+    var selectedLanguage: String
+
+    @Storage(key: .hasCompletedOnboarding, defaultValue: false)
+    var hasCompletedOnboarding: Bool
+
+    // SecureStorage (Keychain) dengan enum key
+    @SecureStorage(key: .accessToken, defaultValue: "")
+    var accessToken: String
+
+    @SecureStorage(key: .userPin, defaultValue: "")
+    var userPin: String
+}
+```
+
+#### 4. Pengujian & Simulator Fallback:
+Keychain pada iOS Simulator tanpa host application sering menghasilkan error `-34018` (`errSecMissingEntitlement`). `KeychainStorage` dilengkapi mekanisme deteksi dan **in-memory fallback otomatis**, sehingga unit test logic dapat berjalan cepat dan lulus 100% tanpa crash.
+
+---
+
 ## ⚡ Alur Deep Link & Asynchronous Preload
 
 Aplikasi mendukung dua jenis deeplink:
@@ -1132,6 +1246,7 @@ final class ProductListViewModelTests: XCTestCase {
 |---|---|
 | `mise exec -- tuist generate --cache-profile none` | Generate Xcode workspace lengkap dengan seluruh target source code. |
 | `mise exec -- tuist test` | Menjalankan seluruh unit test di semua modul. |
+| `make test target=CoreStorage` | Menjalankan unit test khusus target `CoreStorage` (UserDefaults, Keychain, Wrappers). |
 | `mise exec -- tuist test FeatureFavorites` | Menjalankan unit test khusus target `FeatureFavorites`. |
 | `mise exec -- tuist test FeatureProduct` | Menjalankan unit test khusus target `FeatureProduct`. |
 | `mise exec -- tuist edit` | Membuka project manifest (`Project.swift`) di Xcode sementara untuk diedit. |

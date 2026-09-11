@@ -98,6 +98,7 @@ let project = Project(
                 .target(name: "FeatureCart"),
                 .target(name: "CorePermission"),
                 .target(name: "CoreAnalytics"),
+                .target(name: "CoreStorage"),
             ]
         ),
 
@@ -296,6 +297,36 @@ let project = Project(
             ],
             dependencies: [
                 .target(name: "CoreAnalytics"),
+                .external(name: "FactoryKit")
+            ]
+        ),
+
+        // MARK: - Core Storage
+        .target(
+            name: "CoreStorage",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.CoreStorage",
+            deploymentTargets: deploymentTargets,
+            sources: [
+                "Core/Storage/Sources/**"
+            ],
+            dependencies: [
+                .external(name: "FactoryKit")
+            ]
+        ),
+        .target(
+            name: "CoreStorageTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.CoreStorageTests",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .default,
+            sources: [
+                "Core/Storage/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "CoreStorage"),
                 .external(name: "FactoryKit")
             ]
         ),
