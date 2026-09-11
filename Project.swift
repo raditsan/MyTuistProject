@@ -99,6 +99,7 @@ let project = Project(
                 .target(name: "CorePermission"),
                 .target(name: "CoreAnalytics"),
                 .target(name: "CoreStorage"),
+                .target(name: "CoreNotification"),
             ]
         ),
 
@@ -327,6 +328,36 @@ let project = Project(
             ],
             dependencies: [
                 .target(name: "CoreStorage"),
+                .external(name: "FactoryKit")
+            ]
+        ),
+
+        // MARK: - Core Notification
+        .target(
+            name: "CoreNotification",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "dev.tuist.CoreNotification",
+            deploymentTargets: deploymentTargets,
+            sources: [
+                "Core/Notification/Sources/**"
+            ],
+            dependencies: [
+                .external(name: "FactoryKit")
+            ]
+        ),
+        .target(
+            name: "CoreNotificationTests",
+            destinations: .iOS,
+            product: .unitTests,
+            bundleId: "dev.tuist.CoreNotificationTests",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .default,
+            sources: [
+                "Core/Notification/Tests/**"
+            ],
+            dependencies: [
+                .target(name: "CoreNotification"),
                 .external(name: "FactoryKit")
             ]
         ),

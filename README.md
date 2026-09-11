@@ -22,6 +22,7 @@ Aplikasi iOS modern berbasis **SwiftUI** dan **Tuist** dengan penerapan **Modula
    - [I. Logging Analytics Multi-Provider (CoreAnalytics)](#i-logging-analytics-multi-provider-coreanalytics)
    - [J. Networking Berbasis Moya + Combine (CoreNetwork)](#j-networking-berbasis-moya--combine-corenetwork)
    - [K. Manajemen Penyimpanan Data (CoreStorage - Plain & Secure Storage)](#k-manajemen-penyimpanan-data-corestorage---plain--secure-storage)
+   - [L. Notifikasi & Deep Linking (CoreNotification - APNs & Local Notification)](#l-notifikasi--deep-linking-corenotification---apns--local-notification)
 7. [Alur Deep Link & Asynchronous Preload](#-alur-deep-link--asynchronous-preload)
 8. [Panduan Menambah Komponen Baru (Step-by-Step)](#-panduan-menambah-komponen-baru-step-by-step)
    - [1. Menambah Fitur Baru (Feature Module)](#1-menambah-fitur-baru-feature-module)
@@ -182,6 +183,7 @@ graph TD
         Perm[CorePermission]
         Ana[CoreAnalytics]
         Stor[CoreStorage]
+        Notif[CoreNotification]
     end
 
     %% App Dependencies
@@ -199,6 +201,7 @@ graph TD
     App --> Perm
     App --> Ana
     App --> Stor
+    App --> Notif
 
     %% Features Dependencies
     FS --> Nav
@@ -294,6 +297,7 @@ Semua inisialisasi kongkret (Factory bindings dan View resolution) dilakukan di 
 | **`CorePermission`** | Core | Manajemen izin perangkat (Kamera, Lokasi, Notifikasi) dengan batch check & request via async/await dan FactoryKit. |
 | **`CoreAnalytics`** | Core | Sistem analytics multi-provider (*Composite Pattern*) untuk logging event, screen view, user ID, dan user property dengan default `ConsoleAnalyticsProvider`. |
 | **`CoreStorage`** | Core | Solusi penyimpanan ganda: `PlainStorageProtocol` (`UserDefaults` thread-safe) untuk preferensi & cache dengan enum `PlainStorageKey`, serta `SecureStorageProtocol` (Apple `Keychain` hardware terenkripsi) untuk kredensial sensitif dengan enum `SecureStorageKey`, dilengkapi SwiftUI `@Storage` / `@SecureStorage` property wrappers. |
+| **`CoreNotification`** | Core | Mesin pengelola notifikasi: konversi APNs device token ke hex string, penjadwalan local notification (time interval & calendar), manajemen badge, ekstraksi otomatis URL deep link dari payload, dan event streaming via Combine (`openedNotificationPublisher`, `receivedNotificationPublisher`). |
 
 ---
 
@@ -961,6 +965,128 @@ Keychain pada iOS Simulator tanpa host application sering menghasilkan error `-3
 
 ---
 
+### L. Notifikasi & Deep Linking (CoreNotification - APNs & Local Notification)
+
+Modul `CoreNotification` mengelola seluruh siklus hidup notifikasi aplikasi iOS (Push Notification berbasis APNs maupun Local Notification terjadwal), ekstraksi parameter Deep Link otomatis dari payload, manajemen badge, dan streaming interaksi pengguna via Combine.
+
+```
+Core/Notification/Sources/
+├── DI/
+│   └── Container+Notification.swift       # Registrasi FactoryKit: notificationService
+├── Delegate/
+│   └── NotificationCenterDelegateHandler.swift # UNUserNotificationCenterDelegate & Combine subjects
+├── Models/
+│   ├── NotificationAction.swift           # Actionable notification buttons & options
+│   ├── NotificationCategory.swift         # UNNotificationCategory wrapper
+│   └── NotificationPayload.swift          # Parsed payload model + auto deep link extractor
+├── Protocols/
+│   └── NotificationServiceProtocol.swift  # Kontrak notification service lengkap
+└── Services/
+    └── NotificationService.swift          # Implementasi thread-safe berbasis UserNotifications
+```
+
+#### 1. Meminta Izin Notifikasi & Format APNs Device Token:
+```swift
+import CoreNotification
+import FactoryKit
+
+final class NotificationManager {
+    @Injected(\.notificationService) private var notificationService
+
+    // Meminta izin kepada pengguna (Alert, Badge, Sound)
+    func requestPermission() async {
+        do {
+            let granted = try await notificationService.requestAuthorization()
+            print("Izin notifikasi diberikan: \(granted)")
+        } catch {
+            print("Gagal meminta izin: \(error)")
+        }
+    }
+
+    // Dipanggil di AppDelegate didRegisterForRemoteNotificationsWithDeviceToken:
+    func handleDeviceToken(_ deviceToken: Data) {
+        let hexToken = notificationService.formatDeviceToken(deviceToken)
+        print("APNs Device Token: \(hexToken)")
+        // Kirim hexToken ke server backend API
+    }
+}
+```
+
+#### 2. Menjadwalkan Local Notification (Time Interval & Calendar):
+```swift
+// 1. Pengingat Keranjang Belanja (Time Interval: 1 jam dari sekarang)
+try await notificationService.scheduleTimeInterval(
+    id: "cart_reminder_101",
+    title: "Masih Ada Barang di Keranjang!",
+    subtitle: "Checkout sebelum kehabisan",
+    body: "Sepatu impianmu masih menunggumu di keranjang belanja.",
+    timeInterval: 3600, // 1 jam
+    userInfo: ["source": "abandoned_cart"],
+    deepLinkURL: URL(string: "mytuist://cart"), // Otomatis mengarahkan ke keranjang saat di-tap
+    badge: 1
+)
+
+// 2. Notifikasi Flash Sale Setiap Jam 9 Pagi (Calendar Trigger)
+var dateComponents = DateComponents()
+dateComponents.hour = 9
+dateComponents.minute = 0
+
+try await notificationService.scheduleCalendar(
+    id: "daily_flash_sale",
+    title: "🔥 Flash Sale Dimulai!",
+    body: "Diskon hingga 70% untuk produk terpilih hari ini.",
+    dateComponents: dateComponents,
+    repeats: true,
+    deepLinkURL: URL(string: "mytuist://products?tag=flash_sale")
+)
+```
+
+#### 3. Ekstraksi Otomatis Deep Link & Integrasi ke `AppRouter`:
+Payload push notification yang memiliki key seperti `"deeplink"`, `"url"`, `"link"`, atau `"target_url"` secara otomatis diurai menjadi objek `URL` oleh `NotificationPayload`.
+
+Anda dapat menghubungkan aliran notifikasi langsung ke `AppRouter` di `AppDelegate` / `AppDIContainer`:
+```swift
+import CoreNotification
+import CoreNavigation
+import FactoryKit
+import Combine
+
+private var cancellables: Set<AnyCancellable> = []
+
+func setupNotificationRouting() {
+    let notificationService = Container.shared.notificationService()
+    let router = Container.shared.router()
+
+    // Saat user mengetuk notifikasi / action button:
+    notificationService.openedNotificationPublisher
+        .receive(on: DispatchQueue.main)
+        .sink { payload in
+            if let deepLink = payload.deepLinkURL {
+                print("Mengarahkan user via Deep Link: \(deepLink)")
+                router.handle(url: deepLink)
+            }
+        }
+        .store(in: &cancellables)
+}
+```
+
+#### 4. Manajemen Badge & Pembatalan Antrean:
+```swift
+// Set badge count ke angka tertentu (misal 3 pesan belum dibaca)
+try await notificationService.setBadgeCount(3)
+
+// Bersihkan badge saat user membuka inbox
+try await notificationService.clearBadge()
+
+// Hapus notifikasi tertentu yang belum sempat tampil
+await notificationService.removePending(ids: ["cart_reminder_101"])
+
+// Bersihkan seluruh notifikasi lokal
+await notificationService.removeAllPending()
+```
+
+---
+
 ## ⚡ Alur Deep Link & Asynchronous Preload
 
 Aplikasi mendukung dua jenis deeplink:
@@ -1247,6 +1373,7 @@ final class ProductListViewModelTests: XCTestCase {
 | `mise exec -- tuist generate --cache-profile none` | Generate Xcode workspace lengkap dengan seluruh target source code. |
 | `mise exec -- tuist test` | Menjalankan seluruh unit test di semua modul. |
 | `make test target=CoreStorage` | Menjalankan unit test khusus target `CoreStorage` (UserDefaults, Keychain, Wrappers). |
+| `make test target=CoreNotification` | Menjalankan unit test khusus target `CoreNotification` (Payload, Local Scheduling, APNs Token). |
 | `mise exec -- tuist test FeatureFavorites` | Menjalankan unit test khusus target `FeatureFavorites`. |
 | `mise exec -- tuist test FeatureProduct` | Menjalankan unit test khusus target `FeatureProduct`. |
 | `mise exec -- tuist edit` | Membuka project manifest (`Project.swift`) di Xcode sementara untuk diedit. |
