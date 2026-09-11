@@ -75,17 +75,15 @@ public struct DeeplinkLoaderView: View {
 
             HStack(spacing: DesignTokens.Spacing.sm) {
                 Button(L10n.Deeplink.Button.back) {
-                    if router.navigationController.viewControllers.count > 1 {
-                        router.pop()
-                    } else {
-                        router.setRootView(to: .product(.list))
+                    Task {
+                        await router.dismissDeeplinkLoader()
                     }
                 }
                 .buttonStyle(.bordered)
                 .tint(DesignTokens.Colors.textSecondary)
 
                 Button(L10n.Deeplink.Button.retry) {
-                    viewModel.retry(router: router)
+                    viewModel.retry()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(DesignTokens.Colors.primary)

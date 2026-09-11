@@ -67,6 +67,9 @@ public struct SplashView: View {
             }
             viewModel.onAppear()
         }
+        .onDisappear {
+            viewModel.cancel()
+        }
     }
 }
 

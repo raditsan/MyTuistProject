@@ -290,14 +290,41 @@ private final class MockNavigationController: UINavigationController {
     }
 
     func test_handleURL_navigatesToResolvedRoute() {
-        sut.setRootView(to: .splash)
+        sut.setRootView(to: .product(.list))
 
         let url = URL(string: "mytuist://product/99")!
         sut.handle(url: url)
 
         XCTAssertEqual(sut.navigationController.viewControllers.count, 2)
+        let rootVC = sut.navigationController.viewControllers.first as? RouteIdentifiable
+        XCTAssertEqual(rootVC?.routeDestination, .product(.list))
         let topVC = sut.navigationController.viewControllers.last as? RouteIdentifiable
         XCTAssertEqual(topVC?.routeDestination, .product(.detail))
+    }
+
+    func test_handleURL_whenSplashActive_queuesPendingRoute_andExecutesOnCompleteSplash() {
+        sut.setRootView(to: .splash)
+
+        let url = URL(string: "mytuist://product/99")!
+        sut.handle(url: url)
+
+        // Splash screen masih tampil dan belum berpindah
+        XCTAssertEqual(sut.navigationController.viewControllers.count, 1)
+        let splashVC = sut.navigationController.viewControllers.first as? RouteIdentifiable
+        XCTAssertEqual(splashVC?.routeDestination, .splash)
+        XCTAssertEqual(sut.pendingDeepLinkRoute, .product(.detail(id: 99)))
+
+        // Saat splash selesai (misal API config terload)
+        sut.setRootView(to: .product(.list))
+        sut.completeSplash()
+
+        // Berpindah ke ProductList sebagai root dan membuka ProductDetail #99 di atasnya
+        XCTAssertEqual(sut.navigationController.viewControllers.count, 2)
+        let rootVC = sut.navigationController.viewControllers.first as? RouteIdentifiable
+        XCTAssertEqual(rootVC?.routeDestination, .product(.list))
+        let topVC = sut.navigationController.viewControllers.last as? RouteIdentifiable
+        XCTAssertEqual(topVC?.routeDestination, .product(.detail))
+        XCTAssertNil(sut.pendingDeepLinkRoute)
     }
 
     func test_handleURL_deeplinkFetch_triggersDeeplinkLoader() {

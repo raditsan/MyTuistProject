@@ -30,6 +30,30 @@ public final class AppRouter: ObservableObject {
         alertCoordinator.showToast(ToastMessage(title: title, message: message, style: style))
     }
 
+    // MARK: - Splash & State Engine
+
+    /// Holds any incoming deep link that arrives while the splash screen is active.
+    /// This route will be automatically executed as soon as the splash screen finishes loading.
+    public private(set) var pendingDeepLinkRoute: AppRoute?
+
+    /// Indicates whether the app is currently in the splash phase.
+    public var isSplashActive: Bool {
+        (navigationController.viewControllers.first as? RouteIdentifiable)?.routeDestination == .splash
+    }
+
+    /// Completes the splash screen phase, transitions to the base root, and executes any pending deep link.
+    public func completeSplash() {
+        guard let pending = pendingDeepLinkRoute else {
+            return
+        }
+        navigateDeeplink(to: pending)
+    }
+
+    /// Clears any pending deep link route without navigating.
+    public func clearPendingDeepLink() {
+        pendingDeepLinkRoute = nil
+    }
+
     // MARK: - Root
 
     public func setRootView<V: View>(_ view: V) {
@@ -56,14 +80,26 @@ public final class AppRouter: ObservableObject {
     private let deepLinkHandler = DeepLinkHandler()
 
     /// Handles an incoming deep link URL and navigates to the resolved route.
+    /// If currently on the splash screen, queues the deep link so that splash screen can finish
+    /// loading configs/APIs before navigating to the target screen.
     public func handle(url: URL) {
-        if let resolvedRoute = deepLinkHandler.parse(url: url) {
-            if case let .deeplinkFetch(entryPoint) = resolvedRoute {
-                deeplinkLoader(entryPoint)
-            } else {
-                navigate(to: resolvedRoute)
-            }
+        guard let resolvedRoute = deepLinkHandler.parse(url: url) else { return }
+
+        if isSplashActive {
+            // Splash masih aktif (sedang loading config/API) -> simpan ke pending queue
+            pendingDeepLinkRoute = resolvedRoute
+        } else {
+            navigateDeeplink(to: resolvedRoute)
         }
+    }
+    
+    private func navigateDeeplink(to route: AppRoute) {
+        if case let .deeplinkFetch(entryPoint) = route {
+            deeplinkLoader(entryPoint)
+        } else {
+            navigate(to: route, animated: false)
+        }
+        clearPendingDeepLink()
     }
 
     // MARK: - Navigation Engine

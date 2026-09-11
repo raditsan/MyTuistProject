@@ -66,6 +66,17 @@ public struct ProductListView: View {
                 Button {
                     scheduleTestNotification(
                         title: "Flash Sale Spesial! ⚡️",
+                        body: "Preload Deeplink",
+                        seconds: 2,
+                        deepLink: "mytuist://product-preload/\(Int.random(in: 10...110))"
+                    )
+                } label: {
+                    Label("Notif Preload Deeplink", systemImage: "sparkles")
+                }
+                
+                Button {
+                    scheduleTestNotification(
+                        title: "Flash Sale Spesial! ⚡️",
                         body: "Diskon hingga 70% untuk produk pilihan hari ini.",
                         seconds: 5,
                         deepLink: "mytuist://product/1"

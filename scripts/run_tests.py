@@ -282,10 +282,6 @@ def main():
         # Print code coverage report
         print_coverage_report(result_bundle, scheme)
 
-        # Cleanup result bundle
-        if result_bundle.exists():
-            shutil.rmtree(result_bundle, ignore_errors=True)
-
     # Summary
     print("=" * 55)
     print("📊 Ringkasan Hasil Pengujian Unit Test")

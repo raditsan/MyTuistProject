@@ -25,7 +25,7 @@ public final class DeeplinkLoaderViewModel: ObservableObject {
         }
     }
 
-    public func retry(router: AppRouter) {
+    public func retry() {
         Task {
             await execute()
         }
