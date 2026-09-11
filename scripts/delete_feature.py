@@ -237,12 +237,11 @@ def main():
         print(f"  ✅ Removed targets and dependencies from Project.swift")
 
     # 8. Run tuist generate
-    print("\n📦 Menjalankan 'tuist generate --no-open'...")
-    res = subprocess.run(["tuist", "generate", "--no-open"], cwd=root_dir)
-    if res.returncode == 0:
+    from make_feature import run_tuist_generate
+    if run_tuist_generate(root_dir):
         print(f"\n🎉 Feature '{feature_name}' berhasil dihapus dan project telah diperbarui!")
     else:
-        print(f"\n⚠️ 'tuist generate' selesai dengan kode {res.returncode}. Silakan periksa Project.swift.")
+        print(f"\n💡 Jalankan 'tuist generate' secara manual untuk melihat detail masalah.")
 
 if __name__ == "__main__":
     main()

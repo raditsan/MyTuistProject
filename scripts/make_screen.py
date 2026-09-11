@@ -243,29 +243,38 @@ def add_screen_to_data(root_dir: Path, feature_name: str, screen_name: str):
     feature_lower = feature_name.lower()
     screen_lower = screen_name.lower()
 
-    # 1. Update RemoteDataSource
-    rds_path = data_dir / "Sources" / "DataSources" / f"{feature_name}RemoteDataSource.swift"
-    if rds_path.exists():
-        rds_content = rds_path.read_text()
+    # 1. Update Endpoint
+    endpoint_path = data_dir / "Sources" / "Endpoints" / f"{feature_name}Endpoint.swift"
+    target_endpoint_file = endpoint_path if endpoint_path.exists() else (data_dir / "Sources" / "DataSources" / f"{feature_name}RemoteDataSource.swift")
+    if target_endpoint_file.exists():
+        ep_content = target_endpoint_file.read_text()
 
         # Add endpoint case to enum
         endpoint_case = f"case get{screen_name}"
-        if endpoint_case not in rds_content:
-            pattern_enum = r"(public enum " + re.escape(feature_name) + r"Endpoint: APIEndpoint\s*\{)([\s\S]*?)(\n\s*public var baseURL:)"
+        if endpoint_case not in ep_content:
+            pattern_enum = r"(public enum " + re.escape(feature_name) + r"Endpoint:\s*(?:APIEndpoint|TargetType)\s*\{)([\s\S]*?)(\n\s*public var (?:baseURL|path):)"
             def add_ep_case(m):
                 body = m.group(2).rstrip()
                 return f"{m.group(1)}{body}\n    {endpoint_case}{m.group(3)}"
-            rds_content = re.sub(pattern_enum, add_ep_case, rds_content)
+            ep_content = re.sub(pattern_enum, add_ep_case, ep_content)
 
         # Add path in switch self
         path_case_str = f"case .get{screen_name}:"
-        if path_case_str not in rds_content:
+        if path_case_str not in ep_content:
             pattern_path = r"(public var path: String\s*\{[\s\S]*?switch self\s*\{)([\s\S]*?)(\n\s*\}\s*\n\s*\})"
             def add_path_case(m):
                 body = m.group(2).rstrip()
                 new_branch = f"\n        case .get{screen_name}:\n            return \"/{feature_lower}/{screen_lower}\""
                 return f"{m.group(1)}{body}{new_branch}{m.group(3)}"
-            rds_content = re.sub(pattern_path, add_path_case, rds_content)
+            ep_content = re.sub(pattern_path, add_path_case, ep_content)
+
+        target_endpoint_file.write_text(ep_content)
+        print(f"  ✅ Updated Endpoint in {target_endpoint_file.name}")
+
+    # 2. Update RemoteDataSource
+    rds_path = data_dir / "Sources" / "DataSources" / f"{feature_name}RemoteDataSource.swift"
+    if rds_path.exists():
+        rds_content = rds_path.read_text()
 
         # Add method to RemoteDataSourceProtocol
         proto_fetch = f"func fetch{screen_name}() async throws -> {feature_name}DTO"
@@ -284,15 +293,15 @@ def add_screen_to_data(root_dir: Path, feature_name: str, screen_name: str):
                 body = m.group(1).rstrip()
                 method_code = f"""
     public func fetch{screen_name}() async throws -> {feature_name}DTO {{
-        try await client.request(endpoint: {feature_name}Endpoint.get{screen_name}, type: {feature_name}DTO.self)
+        try await client.request(target: {feature_name}Endpoint.get{screen_name}, type: {feature_name}DTO.self)
     }}"""
                 return f"{body}\n{method_code}\n}}"
             rds_content = re.sub(pattern_ds_class, add_ds_method, rds_content)
 
         rds_path.write_text(rds_content)
-        print(f"  ✅ Updated Data DataSource in {rds_path.name}")
+        print(f"  ✅ Updated RemoteDataSource in {rds_path.name}")
 
-    # 2. Update Repository
+    # 3. Update Repository
     repo_path = data_dir / "Sources" / "Repositories" / f"{feature_name}Repository.swift"
     if repo_path.exists():
         repo_content = repo_path.read_text()
@@ -388,6 +397,7 @@ def main():
 import CoreDesignSystem
 import CoreNavigation
 import CoreLocalization
+import Domain{feature_name}
 import FactoryKit
 
 @MainActor
@@ -404,15 +414,51 @@ public struct {view_name}: View {{
     }}
 
     public var body: some View {{
-        VStack(spacing: DesignTokens.Spacing.md) {{
-            Text("{screen_name} Screen")
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(DesignTokens.Colors.textPrimary)
+        Group {{
+            switch viewModel.state {{
+            case .idle, .loading:
+                LoadingView(message: "Loading {screen_name}...")
+            case .empty:
+                ErrorView(
+                    title: "No Data",
+                    message: "No {screen_name} data available.",
+                    retryAction: {{
+                        Task {{ await viewModel.loadData() }}
+                    }}
+                )
+            case .failure(let errorMessage):
+                ErrorView(
+                    title: "Something went wrong",
+                    message: errorMessage,
+                    retryAction: {{
+                        Task {{ await viewModel.loadData() }}
+                    }}
+                )
+            case .success(let item):
+                contentView(item: item)
+            }}
         }}
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DesignTokens.Colors.background.ignoresSafeArea())
         .navigationTitle("{screen_name}")
+        .task {{
+            await viewModel.loadData()
+        }}
+    }}
+
+    @ViewBuilder
+    private func contentView(item: {feature_name}) -> some View {{
+        VStack(spacing: DesignTokens.Spacing.md) {{
+            Text(item.title.isEmpty ? "{screen_name}" : item.title)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+
+            Text("ID: \\(item.id)")
+                .font(.subheadline)
+                .foregroundColor(DesignTokens.Colors.textSecondary)
+        }}
+        .padding(DesignTokens.Spacing.lg)
     }}
 }}
 """
@@ -430,14 +476,45 @@ import CoreNavigation
 import Domain{feature_name}
 import FactoryKit
 
+public enum {screen_name}ViewState: Equatable {{
+    case idle
+    case loading
+    case success({feature_name})
+    case empty
+    case failure(String)
+}}
+
 @MainActor
 public final class {view_model_name}: ObservableObject {{
+    @Published public private(set) var state: {screen_name}ViewState = .idle
     @Injected(\\.router) private var router: AppRouter
     @Injected(\\.get{screen_name}UseCase) private var get{screen_name}UseCase: Get{screen_name}UseCaseProtocol
     public let param: {param_name}?
 
     public init(param: {param_name}? = nil) {{
         self.param = param
+    }}
+
+    public init(
+        param: {param_name}? = nil,
+        get{screen_name}UseCase: Get{screen_name}UseCaseProtocol,
+        router: AppRouter? = nil
+    ) {{
+        self.param = param
+        self.get{screen_name}UseCase = get{screen_name}UseCase
+        if let router {{
+            self.router = router
+        }}
+    }}
+
+    public func loadData() async {{
+        state = .loading
+        do {{
+            let data = try await get{screen_name}UseCase.execute()
+            state = .success(data)
+        }} catch {{
+            state = .failure(error.localizedDescription)
+        }}
     }}
 
     public func goBack() {{
@@ -461,8 +538,14 @@ import FactoryKit
 @testable import {module_name}
 
 private final class MockGet{screen_name}UseCase: Get{screen_name}UseCaseProtocol, @unchecked Sendable {{
+    var resultToReturn: {feature_name}?
+    var errorToThrow: Error?
+
     func execute() async throws -> {feature_name} {{
-        throw NSError(domain: "Mock", code: 0)
+        if let error = errorToThrow {{
+            throw error
+        }}
+        return resultToReturn ?? {dummy_entity}
     }}
 }}
 
@@ -470,30 +553,58 @@ private final class MockGet{screen_name}UseCase: Get{screen_name}UseCaseProtocol
 final class {test_name}: XCTestCase {{
     private var sut: {view_model_name}!
     private var router: AppRouter!
+    private var mockUseCase: MockGet{screen_name}UseCase!
 
     override func setUp() {{
         super.setUp()
+        Container.shared.reset()
         let nav = UINavigationController()
         router = AppRouter(navigationController: nav)
+        mockUseCase = MockGet{screen_name}UseCase()
+
+        let r = router!
         Container.shared.router.register {{
-            MainActor.assumeIsolated {{
-                self.router
-            }}
+            r
         }}
+        let useCase = mockUseCase!
         Container.shared.get{screen_name}UseCase.register {{
-            MockGet{screen_name}UseCase()
+            useCase
         }}
         sut = {view_model_name}()
     }}
 
     override func tearDown() {{
+        Container.shared.reset()
         sut = nil
         router = nil
+        mockUseCase = nil
         super.tearDown()
     }}
 
     func test_initialState() {{
-        XCTAssertNotNil(sut)
+        XCTAssertEqual(sut.state, .idle)
+    }}
+
+    func test_loadData_success() async {{
+        let expected = {dummy_entity}
+        mockUseCase.resultToReturn = expected
+
+        await sut.loadData()
+
+        XCTAssertEqual(sut.state, .success(expected))
+    }}
+
+    func test_loadData_failure() async {{
+        let expectedError = NSError(domain: "TestError", code: 500, userInfo: [NSLocalizedDescriptionKey: "Network Failed"])
+        mockUseCase.errorToThrow = expectedError
+
+        await sut.loadData()
+
+        if case .failure(let message) = sut.state {{
+            XCTAssertTrue(message.contains("Network Failed") || !message.isEmpty)
+        }} else {{
+            XCTFail("Expected .failure state, got \\(sut.state)")
+        }}
     }}
 
     func test_goBack_callsRouterPop() {{
@@ -606,12 +717,11 @@ public enum {destination_name}: FeatureDestination {{
     ensure_feature_target_dependencies(root_dir, feature_name)
 
     # Run tuist generate
-    print("\n📦 Menjalankan 'tuist generate --no-open'...")
-    res = subprocess.run(["tuist", "generate", "--no-open"], cwd=root_dir)
-    if res.returncode == 0:
+    from make_feature import run_tuist_generate
+    if run_tuist_generate(root_dir):
         print(f"\n🎉 Screen '{view_name}' berhasil ditambahkan ke Feature '{feature_name}'!")
     else:
-        print(f"\n⚠️ 'tuist generate' selesai dengan kode {res.returncode}.")
+        print(f"\n💡 Jalankan 'tuist generate' secara manual untuk melihat detail masalah.")
 
 if __name__ == "__main__":
     main()

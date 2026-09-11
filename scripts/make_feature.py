@@ -193,6 +193,7 @@ def create_data_module(root_dir: Path, feature_name: str):
     feature_lower = feature_name.lower()
     data_dir = root_dir / "Modules" / "Data" / feature_name
     (data_dir / "Sources" / "DTOs").mkdir(parents=True, exist_ok=True)
+    (data_dir / "Sources" / "Endpoints").mkdir(parents=True, exist_ok=True)
     (data_dir / "Sources" / "DataSources").mkdir(parents=True, exist_ok=True)
     (data_dir / "Sources" / "Repositories").mkdir(parents=True, exist_ok=True)
     (data_dir / "Tests").mkdir(parents=True, exist_ok=True)
@@ -220,18 +221,18 @@ public struct {feature_name}DTO: Codable, Sendable {{
         dto_path.write_text(template_dto)
         print(f"  ✅ Created: {dto_path.relative_to(root_dir)}")
 
-    # 2. RemoteDataSource
-    rds_path = data_dir / "Sources" / "DataSources" / f"{feature_name}RemoteDataSource.swift"
-    if not rds_path.exists():
-        template_rds = f"""import Foundation
+    # 2. Endpoint
+    endpoint_path = data_dir / "Sources" / "Endpoints" / f"{feature_name}Endpoint.swift"
+    if not endpoint_path.exists():
+        template_endpoint = f"""import Foundation
 import CoreNetwork
-import FactoryKit
+import Moya
 
-public enum {feature_name}Endpoint: APIEndpoint {{
+public enum {feature_name}Endpoint: TargetType {{
     case get{feature_name}
 
-    public var baseURL: String {{
-        "https://api.example.com"
+    public var baseURL: URL {{
+        URL(string: AppEnvironment.baseURL) ?? URL(string: "https://api.example.com")!
     }}
 
     public var path: String {{
@@ -241,10 +242,28 @@ public enum {feature_name}Endpoint: APIEndpoint {{
         }}
     }}
 
-    public var method: HTTPMethod {{
+    public var method: Moya.Method {{
         .get
     }}
+
+    public var task: Task {{
+        .requestPlain
+    }}
+
+    public var headers: [String: String]? {{
+        ["Content-Type": "application/json", "Accept": "application/json"]
+    }}
 }}
+"""
+        endpoint_path.write_text(template_endpoint)
+        print(f"  ✅ Created: {endpoint_path.relative_to(root_dir)}")
+
+    # 3. RemoteDataSource
+    rds_path = data_dir / "Sources" / "DataSources" / f"{feature_name}RemoteDataSource.swift"
+    if not rds_path.exists():
+        template_rds = f"""import Foundation
+import CoreNetwork
+import FactoryKit
 
 public protocol {feature_name}RemoteDataSourceProtocol: Sendable {{
     func fetch{feature_name}() async throws -> {feature_name}DTO
@@ -260,7 +279,7 @@ public final class {feature_name}RemoteDataSource: {feature_name}RemoteDataSourc
     }}
 
     public func fetch{feature_name}() async throws -> {feature_name}DTO {{
-        try await client.request(endpoint: {feature_name}Endpoint.get{feature_name}, type: {feature_name}DTO.self)
+        try await client.request(target: {feature_name}Endpoint.get{feature_name}, type: {feature_name}DTO.self)
     }}
 }}
 """
@@ -399,6 +418,7 @@ def create_feature_module(root_dir: Path, feature_name: str):
 import CoreDesignSystem
 import CoreNavigation
 import CoreLocalization
+import Domain{feature_name}
 import FactoryKit
 
 @MainActor
@@ -415,15 +435,51 @@ public struct {view_name}: View {{
     }}
 
     public var body: some View {{
-        VStack(spacing: DesignTokens.Spacing.md) {{
-            Text("{feature_name} Screen")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(DesignTokens.Colors.textPrimary)
+        Group {{
+            switch viewModel.state {{
+            case .idle, .loading:
+                LoadingView(message: "Loading {feature_name}...")
+            case .empty:
+                ErrorView(
+                    title: "No Data",
+                    message: "No {feature_name} data available.",
+                    retryAction: {{
+                        Task {{ await viewModel.loadData() }}
+                    }}
+                )
+            case .failure(let errorMessage):
+                ErrorView(
+                    title: "Something went wrong",
+                    message: errorMessage,
+                    retryAction: {{
+                        Task {{ await viewModel.loadData() }}
+                    }}
+                )
+            case .success(let item):
+                contentView(item: item)
+            }}
         }}
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DesignTokens.Colors.background.ignoresSafeArea())
         .navigationTitle("{feature_name}")
+        .task {{
+            await viewModel.loadData()
+        }}
+    }}
+
+    @ViewBuilder
+    private func contentView(item: {feature_name}) -> some View {{
+        VStack(spacing: DesignTokens.Spacing.md) {{
+            Text(item.title.isEmpty ? "{feature_name}" : item.title)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+
+            Text("ID: \\(item.id)")
+                .font(.subheadline)
+                .foregroundColor(DesignTokens.Colors.textSecondary)
+        }}
+        .padding(DesignTokens.Spacing.lg)
     }}
 }}
 """
@@ -439,14 +495,45 @@ import CoreNavigation
 import Domain{feature_name}
 import FactoryKit
 
+public enum {feature_name}ViewState: Equatable {{
+    case idle
+    case loading
+    case success({feature_name})
+    case empty
+    case failure(String)
+}}
+
 @MainActor
 public final class {view_model_name}: ObservableObject {{
+    @Published public private(set) var state: {feature_name}ViewState = .idle
     @Injected(\\.router) private var router: AppRouter
     @Injected(\\.get{feature_name}UseCase) private var get{feature_name}UseCase: Get{feature_name}UseCaseProtocol
     public let param: {param_name}?
 
     public init(param: {param_name}? = nil) {{
         self.param = param
+    }}
+
+    public init(
+        param: {param_name}? = nil,
+        get{feature_name}UseCase: Get{feature_name}UseCaseProtocol,
+        router: AppRouter? = nil
+    ) {{
+        self.param = param
+        self.get{feature_name}UseCase = get{feature_name}UseCase
+        if let router {{
+            self.router = router
+        }}
+    }}
+
+    public func loadData() async {{
+        state = .loading
+        do {{
+            let data = try await get{feature_name}UseCase.execute()
+            state = .success(data)
+        }} catch {{
+            state = .failure(error.localizedDescription)
+        }}
     }}
 
     public func goBack() {{
@@ -468,8 +555,14 @@ import FactoryKit
 @testable import {module_name}
 
 private final class MockGet{feature_name}UseCase: Get{feature_name}UseCaseProtocol, @unchecked Sendable {{
+    var resultToReturn: {feature_name}?
+    var errorToThrow: Error?
+
     func execute() async throws -> {feature_name} {{
-        {feature_name}(id: "1", title: "Test")
+        if let error = errorToThrow {{
+            throw error
+        }}
+        return resultToReturn ?? {feature_name}(id: "1", title: "Test {feature_name}")
     }}
 }}
 
@@ -477,30 +570,58 @@ private final class MockGet{feature_name}UseCase: Get{feature_name}UseCaseProtoc
 final class {test_name}: XCTestCase {{
     private var sut: {view_model_name}!
     private var router: AppRouter!
+    private var mockUseCase: MockGet{feature_name}UseCase!
 
     override func setUp() {{
         super.setUp()
+        Container.shared.reset()
         let nav = UINavigationController()
         router = AppRouter(navigationController: nav)
+        mockUseCase = MockGet{feature_name}UseCase()
+
+        let r = router!
         Container.shared.router.register {{
-            MainActor.assumeIsolated {{
-                self.router
-            }}
+            r
         }}
+        let useCase = mockUseCase!
         Container.shared.get{feature_name}UseCase.register {{
-            MockGet{feature_name}UseCase()
+            useCase
         }}
         sut = {view_model_name}()
     }}
 
     override func tearDown() {{
+        Container.shared.reset()
         sut = nil
         router = nil
+        mockUseCase = nil
         super.tearDown()
     }}
 
     func test_initialState() {{
-        XCTAssertNotNil(sut)
+        XCTAssertEqual(sut.state, .idle)
+    }}
+
+    func test_loadData_success() async {{
+        let expected = {feature_name}(id: "99", title: "Success Title")
+        mockUseCase.resultToReturn = expected
+
+        await sut.loadData()
+
+        XCTAssertEqual(sut.state, .success(expected))
+    }}
+
+    func test_loadData_failure() async {{
+        let expectedError = NSError(domain: "TestError", code: 500, userInfo: [NSLocalizedDescriptionKey: "Network Failed"])
+        mockUseCase.errorToThrow = expectedError
+
+        await sut.loadData()
+
+        if case .failure(let message) = sut.state {{
+            XCTAssertTrue(message.contains("Network Failed") || !message.isEmpty)
+        }} else {{
+            XCTFail("Expected .failure state, got \\(sut.state)")
+        }}
     }}
 
     func test_goBack_callsRouterPop() {{
@@ -705,6 +826,85 @@ def register_in_app_di_container(root_dir: Path, feature_name: str):
 
     app_di_path.write_text(app_di_content)
 
+def insert_targets_into_project(proj_content: str, targets_code: str) -> str:
+    """
+    Inserts targets_code into the targets: [...] array of Project(...) in Project.swift.
+    Finds the closing bracket of targets: [...] robustly, supporting trailing commas,
+    additional Project arguments (e.g. schemes: ...), and comments.
+    """
+    project_idx = proj_content.find("Project(")
+    if project_idx != -1:
+        targets_idx = proj_content.find("targets:", project_idx)
+        if targets_idx != -1:
+            open_bracket_idx = proj_content.find("[", targets_idx)
+            if open_bracket_idx != -1:
+                depth = 0
+                in_string = False
+                in_line_comment = False
+                in_block_comment = False
+                escape = False
+                i = open_bracket_idx
+                while i < len(proj_content):
+                    char = proj_content[i]
+                    if escape:
+                        escape = False
+                        i += 1
+                        continue
+                    if in_line_comment:
+                        if char == "\n":
+                            in_line_comment = False
+                        i += 1
+                        continue
+                    if in_block_comment:
+                        if char == "*" and i + 1 < len(proj_content) and proj_content[i + 1] == "/":
+                            in_block_comment = False
+                            i += 2
+                            continue
+                        i += 1
+                        continue
+                    if in_string:
+                        if char == "\\":
+                            escape = True
+                        elif char == '"':
+                            in_string = False
+                        i += 1
+                        continue
+                    if char == '"':
+                        in_string = True
+                        i += 1
+                        continue
+                    if char == "/" and i + 1 < len(proj_content):
+                        if proj_content[i + 1] == "/":
+                            in_line_comment = True
+                            i += 2
+                            continue
+                        elif proj_content[i + 1] == "*":
+                            in_block_comment = True
+                            i += 2
+                            continue
+                    if char == "[":
+                        depth += 1
+                    elif char == "]":
+                        depth -= 1
+                        if depth == 0:
+                            last_newline = proj_content.rfind("\n", 0, i)
+                            formatted_code = targets_code
+                            if not formatted_code.endswith("\n"):
+                                formatted_code += "\n"
+                            if last_newline != -1:
+                                return proj_content[:last_newline + 1] + formatted_code.lstrip("\n") + proj_content[last_newline + 1:]
+                            return proj_content[:i] + formatted_code + proj_content[i:]
+                    i += 1
+    # Fallback to regex pattern
+    pattern = r"(\n[ \t]*\],?\s*\n(?:[ \t]*schemes:|\)))"
+    match = re.search(pattern, proj_content)
+    if match:
+        formatted_code = targets_code
+        if not formatted_code.endswith("\n"):
+            formatted_code += "\n"
+        return proj_content[:match.start()] + "\n" + formatted_code.strip("\n") + "\n" + proj_content[match.start() + 1:]
+    return proj_content
+
 def register_in_project_swift(root_dir: Path, feature_name: str):
     proj_path = root_dir / "Project.swift"
     proj_content = proj_path.read_text()
@@ -767,8 +967,7 @@ def register_in_project_swift(root_dir: Path, feature_name: str):
             ]
         ),
 """
-        pattern_targets_end = r'(\n\s*\]\s*\n\))'
-        proj_content = re.sub(pattern_targets_end, rf'{domain_targets_code}\1', proj_content)
+        proj_content = insert_targets_into_project(proj_content, domain_targets_code)
         print(f"  ✅ Added {domain_name} and {domain_name}Tests targets in Project.swift")
 
     # 3. Add Data Targets if not present
@@ -809,8 +1008,7 @@ def register_in_project_swift(root_dir: Path, feature_name: str):
             ]
         ),
 """
-        pattern_targets_end = r'(\n\s*\]\s*\n\))'
-        proj_content = re.sub(pattern_targets_end, rf'{data_targets_code}\1', proj_content)
+        proj_content = insert_targets_into_project(proj_content, data_targets_code)
         print(f"  ✅ Added {data_name} and {data_name}Tests targets in Project.swift")
 
     # 4. Add or update Feature Targets in Project.swift
@@ -852,8 +1050,7 @@ def register_in_project_swift(root_dir: Path, feature_name: str):
             ]
         ),
 """
-        pattern_targets_end = r'(\n\s*\]\s*\n\))'
-        proj_content = re.sub(pattern_targets_end, rf'{feature_targets_code}\1', proj_content)
+        proj_content = insert_targets_into_project(proj_content, feature_targets_code)
         print(f"  ✅ Added {module_name} and {module_name}Tests targets in Project.swift")
     else:
         # Ensure Domain<Name> is listed in Feature<Name> dependencies
@@ -867,6 +1064,22 @@ def register_in_project_swift(root_dir: Path, feature_name: str):
                 print(f"  ✅ Added {domain_dep_str} to {module_name} dependencies in Project.swift")
 
     proj_path.write_text(proj_content)
+
+def run_tuist_generate(root_dir: Path) -> bool:
+    print("\n📦 Menjalankan 'tuist generate --no-open'...")
+    res = subprocess.run(["tuist", "generate", "--no-open"], cwd=root_dir, capture_output=True, text=True)
+    if res.returncode == 0:
+        if res.stdout.strip():
+            print(res.stdout.strip())
+        return True
+    else:
+        print(f"\n❌ 'tuist generate' GAGAL (Kode Keluar: {res.returncode}):")
+        error_msg = res.stderr.strip() or res.stdout.strip()
+        if error_msg:
+            for line in error_msg.splitlines():
+                print(f"   {line}")
+        print("\n💡 Silakan periksa Project.swift atau detail error di atas.")
+        return False
 
 def main():
     root_dir = Path(__file__).resolve().parent.parent
@@ -902,12 +1115,8 @@ def main():
     register_in_project_swift(root_dir, feature_name)
 
     # Run tuist generate
-    print("\n📦 Menjalankan 'tuist generate --no-open'...")
-    res = subprocess.run(["tuist", "generate", "--no-open"], cwd=root_dir)
-    if res.returncode == 0:
+    if run_tuist_generate(root_dir):
         print(f"\n🎉 Feature '{feature_name}' (Feature + Domain + Data) berhasil dibuat dan diregistrasikan ke project!")
-    else:
-        print(f"\n⚠️ 'tuist generate' selesai dengan kode {res.returncode}. Silakan periksa Project.swift.")
 
 if __name__ == "__main__":
     main()

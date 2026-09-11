@@ -7,7 +7,7 @@ from pathlib import Path
 
 # Add script directory to sys.path to import helpers
 sys.path.append(str(Path(__file__).resolve().parent))
-from make_feature import to_pascal_case, to_camel_case
+from make_feature import to_pascal_case, to_camel_case, insert_targets_into_project
 
 def parse_args():
     name = None
@@ -161,19 +161,17 @@ final class {core_name}ServiceTests: XCTestCase {{
             ]
         ),
 """
-        pattern_targets_end = r'(\n\s*\]\s*\n\))'
-        proj_content = re.sub(pattern_targets_end, rf'{core_targets_code}\1', proj_content)
+        proj_content = insert_targets_into_project(proj_content, core_targets_code)
         print(f"  ✅ Added {module_name} and {module_name}Tests targets in Project.swift")
 
     proj_path.write_text(proj_content)
 
     # 5. Run tuist generate
-    print("\n📦 Menjalankan 'tuist generate --no-open'...")
-    res = subprocess.run(["tuist", "generate", "--no-open"], cwd=root_dir)
-    if res.returncode == 0:
+    from make_feature import run_tuist_generate
+    if run_tuist_generate(root_dir):
         print(f"\n🎉 Core module '{module_name}' berhasil dibuat dan diregistrasikan ke project!")
     else:
-        print(f"\n⚠️ 'tuist generate' selesai dengan kode {res.returncode}. Silakan periksa Project.swift.")
+        print(f"\n💡 Jalankan 'tuist generate' secara manual untuk melihat detail masalah.")
 
 if __name__ == "__main__":
     main()
